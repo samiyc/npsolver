@@ -3,9 +3,9 @@ package dev.samiyc.npsolver.bean;
 import dev.samiyc.npsolver.Application;
 
 public class Value {
-    Integer number = 0;
-    Boolean bool = false;
-    ValueType type;
+    public Integer number = 0;
+    public Boolean bool = false;
+    public ValueType type;
 
     public Value() {
         type = ValueType.EMPTY;
@@ -65,6 +65,6 @@ public class Value {
     }
 
     public boolean isInt() { return type == ValueType.INT; }
-    boolean isBool() { return type == ValueType.BOOL; }
-    boolean isEmpty() { return type == ValueType.BOOL; }
+    public boolean isBool() { return type == ValueType.BOOL; }
+    public boolean isEmpty() { return type == ValueType.BOOL; }
 }

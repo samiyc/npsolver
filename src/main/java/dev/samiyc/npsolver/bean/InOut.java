@@ -15,9 +15,9 @@ public class InOut {
         int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number;
 
         //  /!\Input Code /!\
-        //if (a+b > c) out = new Value(a);
-        //else out = new Value(b);
-        out = new Value(a + b + c);
+        //if (a > b) out = new Value(a);
+        //else out = new Value(b + c);
+        out = new Value(a * a - b * b);
     }
 
     @Override

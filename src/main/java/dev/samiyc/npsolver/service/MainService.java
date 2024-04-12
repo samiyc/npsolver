@@ -9,8 +9,33 @@ import java.util.List;
 public class MainService {
     private static final int MAX_ID = 30, NB_INPUT = 3;
 
-    public MainService() {
+    /**
+     * Main method
+     */
+    public void run() {
+        List<Node> nodes = initNodes();
+        List<InOut> map = new ArrayList<>();
 
+        double min = 0, max=0; int count = 0;
+        while ((min < 75 || max < 100) && count++ < 1000) {
+            initMap(map, 1000);
+
+            for (InOut io : map) nodes.forEach(n -> n.compute(io));
+            //System.out.println("\n### SIM > OUTS"); System.out.println(nodes);
+
+            nodes.forEach(n -> n.evaluate(map));
+            //System.out.println("\n### EVALUATE > EVALS"); System.out.println(nodes);
+
+            nodes.forEach(n -> n.backProp(nodes));
+            System.out.println("\n### AVG EVALS & BACK PROPAGATION");
+            System.out.println(nodes);
+
+            min = getMin(nodes);
+            max = getMax(nodes);
+            cleanUp(nodes, min);
+            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min); //System.out.println(nodes);
+        }
+        System.out.println();
     }
 
     private static List<Node> initNodes() {
@@ -40,40 +65,13 @@ public class MainService {
     }
 
     private static double getMin(List<Node> nodes) {
-        return nodes.stream().mapToDouble(Node::getAvgEval).reduce(Double.MAX_VALUE, Double::min);
+        return nodes.stream().mapToDouble(Node::getAvgEval)
+                .filter(value -> value != 0.0)
+                .reduce(Double.MAX_VALUE, Double::min);
     }
 
     private static double getMax(List<Node> nodes) {
-        return nodes.stream().mapToDouble(Node::getAvgEval).reduce(Double.MIN_VALUE, Double::max);
-    }
-
-    /**
-     * Main method
-     */
-    public void run() {
-        List<Node> nodes = initNodes();
-        List<InOut> map = new ArrayList<>();
-
-        double min = 0, max;
-        int count = 0;
-        while (min < 75 && count++ < 1000) {
-            initMap(map, 1000);
-
-            for (InOut io : map) nodes.forEach(n -> n.compute(io));
-            //System.out.println("\n### SIM > OUTS"); System.out.println(nodes);
-
-            nodes.forEach(n -> n.evaluate(map));
-            //System.out.println("\n### EVALUATE > EVALS"); System.out.println(nodes);
-
-            nodes.forEach(n -> n.backProp(nodes));
-            System.out.println("\n### AVG EVALS & BACK PROPAGATION");
-            System.out.println(nodes);
-
-            min = getMin(nodes);
-            max = getMax(nodes);
-            cleanUp(nodes, min);
-            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min); //System.out.println(nodes);
-        }
-        System.out.println();
+        return nodes.stream().mapToDouble(Node::getAvgEval)
+                .reduce(Double.MIN_VALUE, Double::max);
     }
 }

@@ -1,11 +1,15 @@
 package dev.samiyc.npsolver.bean;
 
+import dev.samiyc.npsolver.service.EvaluationServiceUtil;
+
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
 public class Node {
+    Random random = new Random();
     private static final int MAX_OP = 8;
     public Node nodeA, nodeB;
     public int id, op;
@@ -41,32 +45,7 @@ public class Node {
         nodeB.addChild(this);
     }
 
-    public static int baseEval(int valOut, int valExp, int valOutDif, int valExpDif) {
-        return baseEval(new Value(valOut), new Value(valExp), new Value(valOutDif), new Value(valExpDif));
-    }
 
-    public static int baseEval(Value valOut, Value valExp, Value valOutDif, Value valExpDif) {
-
-        int eval = 0;
-        if (valOut.isBool() && valExp.isBool()) {
-            if (valOut.bool == valExp.bool) eval = 100;
-        } else {
-            int out = valOut.number, exp = valExp.number, outDif = valOutDif.number, expDif = valExpDif.number;
-            if (outDif == expDif) eval += 5; //Comparaison des delta n avec n-1
-            if ((outDif >= 0 && expDif >= 0) || (outDif < 0 && expDif < 0)) eval += 5; //Verification du signe du delta
-            if (out / 10 == exp / 10) eval += 5;
-            if (out / 100 == exp / 100) eval += 5;
-            if (out / 1000 == exp / 1000) eval += 5;
-            if ((out >= 0 && exp >= 0) || (out < 0 && exp < 0)) eval += 5; //Vérification du signe
-            if (out != 0 && exp % out == 0) eval += 5;   //exp multiple de out
-            if (exp != 0 && out % exp == 0) eval += 5;   //out multiple de out
-            if (out % 2 == 0 && exp % 2 == 0) eval += 5; //Multiple de 2
-            if (out % 3 == 0 && exp % 3 == 0) eval += 5; //Multiple de 3
-            if (out == exp) eval = 100;
-        }
-
-        return eval;
-    }
 
     public static double calcAverage(List<Integer> numbers) {
         if (numbers.isEmpty()) return 0.0;
@@ -76,12 +55,12 @@ public class Node {
     }
 
     private void addChild(Node node) {
-        childs.add(node);
+        //childs.add(node); //FIXME !
     }
 
     private List<Integer> checkIds(List<Node> nodes) {
         //Randomly choose a unique ida, idb and operator
-        Random random = new Random();
+
         int count = 0, ida, idb;
         boolean any;
         do {
@@ -108,7 +87,7 @@ public class Node {
     }
 
     public void compute(InOut io) {
-        if (op == MAX_OP) {
+        if (isInput()) {
             outs.add(io.in.get(id));
         } else {
             Value a = nodeA.lastOut(), b = nodeB.lastOut();
@@ -131,7 +110,7 @@ public class Node {
                 Value exp = map.get(i).out;
                 Value outDif = out.minus(lout), expDif = exp.minus(lexp);
 
-                evals.add(baseEval(out, exp, outDif, expDif));
+                evals.add(EvaluationServiceUtil.eval(out, exp, outDif, expDif));
                 lout = out;
                 lexp = exp;
             }
