@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Random;
 
 public class InOut {
-    List<Value> in;
-    Value out;
+    public List<Value> in;
+    public Value out;
 
     public InOut(int nbInupt) {
         in = new ArrayList<>();
@@ -15,9 +15,11 @@ public class InOut {
         int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number;
 
         //  /!\Input Code /!\
-        //if (a > b) out = new Value(a);
-        //else out = new Value(b + c);
-        out = new Value(a * a - b * b);
+        if (a > b) out = new Value(a);
+        else out = new Value(b + c);
+        //out = new Value(a * a - b * b);
+        //out = new Value(42);
+        //out = new Value(a > b && c > b);
     }
 
     @Override

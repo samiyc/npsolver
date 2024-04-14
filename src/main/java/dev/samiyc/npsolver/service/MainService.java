@@ -5,9 +5,12 @@ import dev.samiyc.npsolver.bean.Node;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MainService {
-    private static final int MAX_ID = 30, NB_INPUT = 3;
+    private static final int MAX_ID = 20, NB_INPUT = 3;
+    public static final boolean GHOST_NODE_ALLOWED = true;
+    public static Random random = new Random();
 
     /**
      * Main method
@@ -17,8 +20,8 @@ public class MainService {
         List<InOut> map = new ArrayList<>();
 
         double min = 0, max=0; int count = 0;
-        while ((min < 75 || max < 100) && count++ < 1000) {
-            initMap(map, 1000);
+        while (max < 100 && count++ < 10000) {
+            initMap(map, 100);
 
             for (InOut io : map) nodes.forEach(n -> n.compute(io));
             //System.out.println("\n### SIM > OUTS"); System.out.println(nodes);
@@ -32,16 +35,17 @@ public class MainService {
 
             min = getMin(nodes);
             max = getMax(nodes);
-            cleanUp(nodes, min);
-            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min); //System.out.println(nodes);
+            if (min >= max) System.out.println("WARNING: min > max");
+            if (max < 100) cleanUp(nodes, min, max);
+            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:"+map.get(map.size()-2).out+" "+map.getLast().out); //System.out.println(nodes);
         }
         System.out.println();
     }
 
     private static List<Node> initNodes() {
         List<Node> nodes = new ArrayList<>();
-        for (int i = 0; i < NB_INPUT; i++) nodes.add(new Node("INPUT", i));
-        for (int i = NB_INPUT; i < MAX_ID; i++) nodes.add(new Node(nodes, i));
+        for (int i = 0; i < NB_INPUT; i++) nodes.add(new Node(i)); //INPUT NODE
+        for (int i = NB_INPUT; i < MAX_ID; i++) nodes.add(new Node(nodes, i)); //COMPUTE NODE
         //System.out.println("\n### NODES - nbNodes:" + nodes.size()); System.out.println(nodes);
         return nodes;
     }
@@ -52,8 +56,8 @@ public class MainService {
         //System.out.println("\n### THE MAP - nbTest:" + map.size()); System.out.println(map);
     }
 
-    private static void cleanUp(List<Node> nodes, double min) {
-        nodes.forEach(n -> n.cleanUp(min));
+    private static void cleanUp(List<Node> nodes, double min, double max) {
+        if (min < max || GHOST_NODE_ALLOWED) nodes.forEach(n -> n.cleanUp(min));
         nodes.removeIf(n -> n.isCompute() && (!n.asParent() || n.avgEval == 0.0));
         nodes.forEach(Node::reset);
         for (int i = 0; i < MAX_ID; i++) {

@@ -2,15 +2,15 @@ package dev.samiyc.npsolver.service;
 
 import dev.samiyc.npsolver.bean.Value;
 
-public class EvaluationServiceUtil {
+public class EvaluationStaticService {
 
-    public static final int SIMILAR_EVAL_BOOST_5 = 5;
-    public static final int MAX_ESTIMATION_80 = 80;
+    public static final int SIMILAR_EVAL_BOOST = 10;
+    public static final int MAX_ESTIMATION = 90;
 
     /**
      * Lock the constructor to make sure it stay instanceLess
      */
-    private EvaluationServiceUtil() {
+    private EvaluationStaticService() {
     }
 
     public static int eval(int valOut, int valExp, int valOutDif, int valExpDif) {
@@ -31,7 +31,7 @@ public class EvaluationServiceUtil {
             } else {
                 eval += compareValues(valOutDif.number, valExpDif.number);
                 eval += compareValues(valOut.number, valExp.number);
-                if (eval > MAX_ESTIMATION_80) eval = MAX_ESTIMATION_80;
+                if (eval > MAX_ESTIMATION) eval = MAX_ESTIMATION;
             }
         }
         return eval;
@@ -52,7 +52,7 @@ public class EvaluationServiceUtil {
     }
 
     public static int evaluate(boolean b) {
-        return b ? SIMILAR_EVAL_BOOST_5 : 0;
+        return b ? SIMILAR_EVAL_BOOST : 0;
     }
     private static boolean bothInt(Value valOut, Value valExp) {
         return valOut.isInt() && valExp.isInt();
