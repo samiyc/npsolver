@@ -8,9 +8,8 @@ import java.util.List;
 import java.util.Random;
 
 public class MainService {
-    private static final int MAX_ID = 50, NB_INPUT = 4;
-    public static final int MAX_CYCLE = 50000, IO_MAP_NB_ENTRY = 50;
-    public static final boolean GHOST_NODE_ALLOWED = false;
+    private static final int MAX_ID = 100, NB_INPUT = 4;
+    private static final int MAX_CYCLE = 50000, IO_MAP_NB_ENTRY = 100;
     public static Random random = new Random();
 
     /**
@@ -20,27 +19,47 @@ public class MainService {
         List<Node> nodes = initNodes();
         List<InOut> map = new ArrayList<>();
 
-        double min = 0, max=0; int count = 0;
+        double min = 0, max = 0;
+        int count = 0;
         while (max < 100 && count++ < MAX_CYCLE) {
+            long cycleStartCt = System.currentTimeMillis();
             initMap(map, IO_MAP_NB_ENTRY);
 
+            long initMapCt = System.currentTimeMillis();
             for (InOut io : map) nodes.forEach(n -> n.compute(io));
             //System.out.println("\n### SIM > OUTS"); System.out.println(nodes);
 
+            long computeCt = System.currentTimeMillis();
             nodes.forEach(n -> n.evaluate(map));
             //System.out.println("\n### EVALUATE > EVALS"); System.out.println(nodes);
 
+            long evalCt = System.currentTimeMillis();
             nodes.forEach(n -> n.backProp(nodes));
-            System.out.println("\n### AVG EVALS & BACK PROPAGATION");
-            System.out.println(nodes);
+            long backPropCt = System.currentTimeMillis();
 
             min = getMin(nodes);
             max = getMax(nodes);
-            if (min >= max) System.out.println("WARNING: min > max");
+            if (max > 95.0 || count+5 > MAX_CYCLE) {
+                System.out.println("\n### AVG EVALS & BACK PROPAGATION");
+                System.out.println(nodes);
+            }
             if (max < 100) cleanUp(nodes, min, max);
-            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:"+map.get(map.size()-2).out+" "+map.getLast().out); //System.out.println(nodes);
+            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:" + map.get(map.size() - 2).out + " " + map.getLast().out); //System.out.println(nodes);
+
+            performanceInfos(cycleStartCt, initMapCt, computeCt, evalCt, backPropCt);
         }
         System.out.println();
+    }
+
+    private static void performanceInfos(long cycleStartCt, long initMapCt, long computeCt, long evalCt, long backPropCt) {
+        long endCycleCt = System.currentTimeMillis();
+        long totalCt = endCycleCt - cycleStartCt;
+        long cleanUpCt = endCycleCt - backPropCt;
+        backPropCt -= evalCt;
+        evalCt -= computeCt;
+        computeCt -= initMapCt;
+        initMapCt -= cycleStartCt;
+        System.out.println("Cycle:" + totalCt + " initMap:" + initMapCt + " compute:" + computeCt + " eval:" + evalCt + " backProp:" + backPropCt + " cleanUp:" + cleanUpCt);
     }
 
     private static List<Node> initNodes() {
@@ -58,7 +77,7 @@ public class MainService {
     }
 
     private static void cleanUp(List<Node> nodes, double min, double max) {
-        if (min < max || GHOST_NODE_ALLOWED) nodes.forEach(n -> n.cleanUp(min));
+        if (min < max) nodes.forEach(n -> n.cleanUp(min));
         nodes.removeIf(n -> n.isCompute() && (!n.asParent() || n.avgEval == 0.0));
         nodes.forEach(Node::reset);
         for (int i = 0; i < MAX_ID; i++) {

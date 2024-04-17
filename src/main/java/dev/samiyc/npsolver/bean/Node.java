@@ -6,18 +6,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static dev.samiyc.npsolver.service.MainService.GHOST_NODE_ALLOWED;
 import static dev.samiyc.npsolver.service.MainService.random;
 
 public class Node {
-    public static final int BACK_PROP_LOSS = 1;
-    private static final int MAX_OP = 7;
+    private static final int BACK_PROP_LOSS = 2;
+    private static final int MAX_OP = 6;
 
     public Node nodeA, nodeB;
     public int id, op;
     public double avgEval = 0.0;
     public List<Value> outs;
-    public List<Integer> evals;
+    public List<Short> evals;
     public List<Node> childs;
 
     /**
@@ -29,8 +28,6 @@ public class Node {
         id = curId;
         op = MAX_OP;
         outs = new ArrayList<>();
-        evals = new ArrayList<>();
-        childs = new ArrayList<>();
     }
 
     /**
@@ -51,15 +48,15 @@ public class Node {
         nodeB.addChild(this);
     }
 
-    public static double calcAverage(List<Integer> numbers) {
+    public static double calcAverage(List<Short> numbers) {
         if (numbers.isEmpty()) return 0.0;
-        int sum = 0;
-        for (int number : numbers) sum += number;
-        return (double) sum / numbers.size();
+        return numbers.stream()
+                .mapToInt(Short::shortValue)
+                .average().getAsDouble();
     }
 
     private void addChild(Node node) {
-        if (!GHOST_NODE_ALLOWED) childs.add(node);
+        if (isCompute()) childs.add(node);
     }
 
     private List<Integer> checkIds(List<Node> nodes) {
@@ -69,7 +66,7 @@ public class Node {
         do {
             ida = random.nextInt(id - 1);
             idb = random.nextInt(id - 1);
-            //if (ida == idb) idb++;
+            if (ida == idb) idb++;
             op = random.nextInt(MAX_OP);
 
             //Duplicate ? retry 10x
@@ -97,38 +94,29 @@ public class Node {
                 outs.add(boolIntInteraction(b, a));
             } else {
                 if (op == 0) outs.add(a.add(b));
-                if (op == 1) outs.add(a.sup(b));
-                if (op == 2) outs.add(a.sup2(b));
-                if (op == 3) outs.add(a.alternative(b));
-                if (op == 4) outs.add(a.minus(b));
-                if (op == 5) outs.add(a.mult(b));
-                if (op == 6) outs.add(a.eq(b));
+                else if (op == 1) outs.add(a.sup(b));
+                else if (op == 2) outs.add(a.alternative(b));
+                else if (op == 3) outs.add(a.minus(b));
+                else if (op == 4) outs.add(a.mult(b));
+                else if (op == 5) outs.add(a.eq(b));
             }
         }
     }
 
     private Value boolIntInteraction(Value bl, Value nt) {
-        return bl.bool == (op < MAX_OP / 2) ? new Value(nt.number) : new Value();
+        return bl.bool == (op < MAX_OP / 2) ? nt : new Value();
     }
 
     public void evaluate(List<InOut> map) {
         if (isCompute()) {
-            Value lout = new Value(), lexp = new Value();
-            Value loutDif = new Value(), lexpDif = new Value();
+            Value out, exp, lout = new Value(), lexp = new Value();
             for (int i = 0; i < outs.size(); i++) {
-                Value out = outs.get(i);
-                Value exp = map.get(i).out;
-                Value outDif = lout.isEmpty() ? lout : out.minus(lout);
-                Value expDif = lexp.isEmpty() ? lexp : exp.minus(lexp);
-                Value outDifDif = loutDif.isEmpty() ? loutDif : outDif.minus(loutDif);
-                Value expDifDif = lexpDif.isEmpty() ? lexpDif : expDif.minus(lexpDif);
+                out = outs.get(i);
+                exp = map.get(i).out;
 
-                evals.add(EvaluationStaticService.eval(out, exp, outDif, expDif, outDifDif, expDifDif));
-
+                evals.add(EvaluationStaticService.eval(out, exp, out.minus(lout), exp.minus(lexp)));
                 lout = out;
                 lexp = exp;
-                loutDif = outDif;
-                lexpDif = expDif;
             }
             avgEval = calcAverage(evals);
         }
@@ -157,6 +145,7 @@ public class Node {
     public void cleanUp(double min) {
         if (isCompute() && avgEval <= min) {
             prepareForDelete();
+            childs = null;
         }
     }
 
@@ -164,7 +153,9 @@ public class Node {
         avgEval = 0.0;
         nodeA = null;
         nodeB = null;
-        childs.forEach(Node::prepareForDelete);
+        outs = null;
+        evals = null;
+        if (childs != null) childs.forEach(Node::prepareForDelete);
     }
 
     public void reset() {

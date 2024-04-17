@@ -2,11 +2,10 @@ package dev.samiyc.npsolver.bean;
 
 public class Value {
     public Integer number = 0;
-    public Boolean bool = false;
-    public ValueType type;
+    public Boolean bool;
+    public ValueType type = ValueType.EMPTY;
 
     public Value() {
-        type = ValueType.EMPTY;
     }
 
     public Value(Integer val) {
@@ -30,17 +29,11 @@ public class Value {
     public Value mult(Value other) {
         if (bothInt(other)) return new Value(number * other.number);
         if (bothBool(other)) return new Value(bool && other.bool);
-        if (isEmpty() || other.isEmpty()) return new Value();
         return new Value();
     }
 
     public Value sup(Value other) {
         if (bothInt(other)) return new Value(number > other.number);
-        return new Value();
-    }
-
-    public Value sup2(Value other) {
-        if (bothInt(other)) return number > other.number ? new Value(number) : new Value();
         return new Value();
     }
 
@@ -52,7 +45,7 @@ public class Value {
 
     public Value minus(Value other) {
         if (bothInt(other)) return new Value(number - other.number);
-        if (bothBool(other)) return new Value(bool != other.bool);
+        if (bothBool(other)) return new Value(!bool.equals(other.bool));
         if (other.isEmpty()) return this;
         if (isEmpty()) {
             if (other.isInt()) return new Value(-other.number);
@@ -62,8 +55,8 @@ public class Value {
     }
 
     public Value eq(Value other) {
-        if (bothInt(other)) return new Value(number == other.number);
-        if (bothBool(other)) return new Value(bool == other.bool);
+        if (bothInt(other)) return new Value(number.equals(other.number));
+        if (bothBool(other)) return new Value(bool.equals(other.bool));
         return new Value();
     }
 
