@@ -64,8 +64,8 @@ public class Node {
         int count = 0, ida, idb;
         boolean any;
         do {
-            ida = random.nextInt(id - 1);
-            idb = random.nextInt(id - 1);
+            ida = random.nextInt(id / 2);
+            idb = random.nextInt(id / 2);
             if (ida == idb) idb++;
             op = random.nextInt(MAX_OP);
 
