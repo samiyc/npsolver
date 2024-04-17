@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Random;
 
 public class MainService {
-    private static final int MAX_ID = 20, NB_INPUT = 3;
-    public static final boolean GHOST_NODE_ALLOWED = true;
+    private static final int MAX_ID = 50, NB_INPUT = 4;
+    public static final int MAX_CYCLE = 50000, IO_MAP_NB_ENTRY = 50;
+    public static final boolean GHOST_NODE_ALLOWED = false;
     public static Random random = new Random();
 
     /**
@@ -20,8 +21,8 @@ public class MainService {
         List<InOut> map = new ArrayList<>();
 
         double min = 0, max=0; int count = 0;
-        while (max < 100 && count++ < 10000) {
-            initMap(map, 100);
+        while (max < 100 && count++ < MAX_CYCLE) {
+            initMap(map, IO_MAP_NB_ENTRY);
 
             for (InOut io : map) nodes.forEach(n -> n.compute(io));
             //System.out.println("\n### SIM > OUTS"); System.out.println(nodes);

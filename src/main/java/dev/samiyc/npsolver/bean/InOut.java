@@ -12,14 +12,16 @@ public class InOut {
         in = new ArrayList<>();
         Random random = new Random();
         for (int i = nbInupt; i > 0; i--) in.add(new Value(random.nextInt(100) - 50));
-        int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number;
+        int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number, d = in.get(3).number;
 
         //  /!\Input Code /!\
-        if (a > b) out = new Value(a);
-        else out = new Value(b + c);
-        //out = new Value(a * a - b * b);
-        //out = new Value(42);
-        //out = new Value(a > b && c > b);
+        out = new Value(a < b ? d * d : b + c);
+        //out = new Value(a < b ? d : b + c);
+        //out = new Value(a * a - b * b + c - d);
+        //out = new Value(a < b && c > d);
+        //out = new Value(a == 0);
+        //out = new Value(a > 0);
+        //out = new Value(a >= 0);
     }
 
     @Override

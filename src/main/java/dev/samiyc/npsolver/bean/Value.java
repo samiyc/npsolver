@@ -1,7 +1,5 @@
 package dev.samiyc.npsolver.bean;
 
-import java.util.Objects;
-
 public class Value {
     public Integer number = 0;
     public Boolean bool = false;
@@ -22,63 +20,51 @@ public class Value {
     }
 
     public Value add(Value other) {
-        if (isEmpty()) return other;
-        if (other.isEmpty()) return this;
         if (bothInt(other)) return new Value(number + other.number);
         if (bothBool(other)) return new Value(bool || other.bool);
-        if (isInt() && other.isBool()) return new Value(number + (other.bool ? 1 : 0));
-        if (isBool() && other.isInt()) return new Value((bool ? 1 : 0) + other.number);
+        if (other.isEmpty()) return this;
+        if (isEmpty()) return other;
         return new Value();
     }
 
     public Value mult(Value other) {
-        if (isEmpty() || other.isEmpty()) return new Value();
         if (bothInt(other)) return new Value(number * other.number);
         if (bothBool(other)) return new Value(bool && other.bool);
-        if (isInt() && other.isBool() && other.bool) return new Value(number);
-        if (isBool() && other.isInt() && bool) return new Value(other.number);
+        if (isEmpty() || other.isEmpty()) return new Value();
         return new Value();
     }
 
     public Value sup(Value other) {
+        if (bothInt(other)) return new Value(number > other.number);
+        return new Value();
+    }
+
+    public Value sup2(Value other) {
         if (bothInt(other)) return number > other.number ? new Value(number) : new Value();
-        if (bothBool(other)) return new Value(!bool && !other.bool);
-        if (isInt() && other.isBool()) return new Value(other.bool == (number >= 0));
-        if (isBool() && other.isInt()) return new Value(bool == (other.number >= 0));
         return new Value();
     }
 
     public Value alternative(Value other) {
-        if (isInt() && other.isInt()) return other;
-        if (isBool() && other.isBool()) return other;
+        if (bothInt(other)) return other;
+        if (bothBool(other)) return other;
         return this;
     }
 
     public Value minus(Value other) {
+        if (bothInt(other)) return new Value(number - other.number);
+        if (bothBool(other)) return new Value(bool != other.bool);
         if (other.isEmpty()) return this;
         if (isEmpty()) {
             if (other.isInt()) return new Value(-other.number);
             if (other.isBool()) return new Value(!other.bool);
         }
-        if (bothInt(other)) return new Value(number - other.number);
-        if (bothBool(other)) return new Value(bool != other.bool);
-        if (isInt() && other.isBool()) return new Value(number - (other.bool ? 1 : 0));
-        if (isBool() && other.isInt()) return new Value((bool ? 1 : 0) - other.number);
         return new Value();
     }
 
     public Value eq(Value other) {
-        if (bothInt(other)) return new Value(Objects.equals(number, other.number));
+        if (bothInt(other)) return new Value(number == other.number);
         if (bothBool(other)) return new Value(bool == other.bool);
-        return new Value(false);
-    }
-
-    private boolean bothInt(Value other) {
-        return isInt() && other.isInt();
-    }
-
-    private boolean bothBool(Value other) {
-        return isBool() && other.isBool();
+        return new Value();
     }
 
     @Override
@@ -86,6 +72,14 @@ public class Value {
         if (isInt()) return number.toString();
         if (isBool()) return bool.toString();
         return "N";
+    }
+
+    public boolean bothInt(Value other) {
+        return isInt() && other.isInt();
+    }
+
+    public boolean bothBool(Value other) {
+        return isBool() && other.isBool();
     }
 
     public boolean isInt() {
@@ -97,6 +91,6 @@ public class Value {
     }
 
     public boolean isEmpty() {
-        return type == ValueType.BOOL;
+        return type == ValueType.EMPTY;
     }
 }

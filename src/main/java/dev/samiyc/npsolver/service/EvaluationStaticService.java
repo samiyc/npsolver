@@ -4,8 +4,8 @@ import dev.samiyc.npsolver.bean.Value;
 
 public class EvaluationStaticService {
 
-    public static final int SIMILAR_EVAL_BOOST = 10;
-    public static final int MAX_ESTIMATION = 90;
+    public static final int SIMILAR_EVAL_BOOST = 1;
+    public static final int MAX_ESTIMATION = 80;
 
     /**
      * Lock the constructor to make sure it stay instanceLess
@@ -13,24 +13,29 @@ public class EvaluationStaticService {
     private EvaluationStaticService() {
     }
 
-    public static int eval(int valOut, int valExp, int valOutDif, int valExpDif) {
-        return eval(new Value(valOut), new Value(valExp), new Value(valOutDif), new Value(valExpDif));
-    }
-    public static int eval(boolean valOut, boolean valExp) {
-        return eval(new Value(valOut), new Value(valExp), new Value(), new Value());
+    public static int eval(int valOut, int valExp, int valOutDif, int valExpDif, int outDifDif, int expDifDif) {
+        return eval(new Value(valOut), new Value(valExp),
+                new Value(valOutDif), new Value(valExpDif),
+                new Value(outDifDif), new Value(expDifDif));
     }
 
-    public static int eval(Value valOut, Value valExp, Value valOutDif, Value valExpDif) {
+    public static int eval(boolean valOut, boolean valExp) {
+        return eval(new Value(valOut), new Value(valExp), new Value(), new Value(), new Value(), new Value());
+    }
+
+    public static int eval(Value out, Value exp, Value outDif, Value expDif, Value outDifDif, Value expDifDif) {
         int eval = 0;
-        if (bothBool(valOut, valExp)) {
-            if (valOut.bool.equals(valExp.bool)) eval = 100;
-        }
-        else if (bothInt(valOut, valExp)) {
-            if (valOut.number.equals(valExp.number)) {
+        if (out.bothBool(exp)) {
+            if (out.bool.equals(exp.bool)) eval = 100;
+        } else if (!out.isBool() && exp.isBool()) {
+            if ((!out.isEmpty() && exp.bool) || (out.isEmpty() && !exp.bool)) eval = 100;
+        } else if (out.bothInt(exp)) {
+            if (out.number.equals(exp.number)) {
                 eval = 100;
             } else {
-                eval += compareValues(valOutDif.number, valExpDif.number);
-                eval += compareValues(valOut.number, valExp.number);
+                eval += compareValues(out.number, exp.number);
+                if (!expDif.isEmpty()) eval += compareValues(outDif.number, expDif.number);
+                if (!expDifDif.isEmpty()) eval += compareValues(outDifDif.number, expDifDif.number);
                 if (eval > MAX_ESTIMATION) eval = MAX_ESTIMATION;
             }
         }
@@ -41,8 +46,10 @@ public class EvaluationStaticService {
         int eval = 0;
         eval += evaluate((out == exp)); //Sign
         eval += evaluate((out >= 0 && exp >= 0) || (out < 0 && exp < 0)); //Sign
-        eval += evaluate(out % 2 == 0 && exp % 2 == 0); //Multiple de 2
-        eval += evaluate(out % 3 == 0 && exp % 3 == 0); //Multiple de 3
+        eval += evaluate(out % 2 == 0 && exp % 2 == 0);
+        eval += evaluate(out % 3 == 0 && exp % 3 == 0);
+        eval += evaluate(out % 5 == 0 && exp % 5 == 0);
+        eval += evaluate(out % 7 == 0 && exp % 7 == 0);
         eval += evaluate(out / 10 == exp / 10);
         eval += evaluate(out / 100 == exp / 100);
         eval += evaluate(out / 1000 == exp / 1000);
@@ -53,11 +60,5 @@ public class EvaluationStaticService {
 
     public static int evaluate(boolean b) {
         return b ? SIMILAR_EVAL_BOOST : 0;
-    }
-    private static boolean bothInt(Value valOut, Value valExp) {
-        return valOut.isInt() && valExp.isInt();
-    }
-    private static boolean bothBool(Value valOut, Value valExp) {
-        return valOut.isBool() && valExp.isBool();
     }
 }
