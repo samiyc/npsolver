@@ -6,12 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static dev.samiyc.npsolver.service.MainService.random;
+import static dev.samiyc.npsolver.service.MainService.*;
 
 public class Node {
-    private static final int BACK_PROP_LOSS = 2;
-    private static final int MAX_OP = 6;
-
     public Node nodeA, nodeB;
     public int id, op;
     public double avgEval = 0.0;
@@ -48,38 +45,27 @@ public class Node {
         nodeB.addChild(this);
     }
 
-    public static double calcAverage(List<Short> numbers) {
-        if (numbers.isEmpty()) return 0.0;
-        return numbers.stream()
-                .mapToInt(Short::shortValue)
-                .average().getAsDouble();
-    }
-
-    private void addChild(Node node) {
-        if (isCompute()) childs.add(node);
-    }
-
     private List<Integer> checkIds(List<Node> nodes) {
         //Randomly choose a unique ida, idb and operator
-        int count = 0, ida, idb;
+        int count = 0, ida, idb, idRdc;
         boolean any;
         do {
-            ida = random.nextInt(id / 2);
-            idb = random.nextInt(id / 2);
+            idRdc = id > 40 ? id / 8 : id - 1;
+            ida = random.nextInt(idRdc);
+            idb = random.nextInt(idRdc);
             if (ida == idb) idb++;
             op = random.nextInt(MAX_OP);
 
             //Duplicate ? retry 10x
             final int fida = ida, fidb = idb;
-            any = nodes.stream().anyMatch(p ->
-                    p.nodeA != null && p.nodeB != null && (
-                            (p.nodeA.id == fida && p.nodeB.id == fidb)
-                                    || (p.nodeA.id == fidb && p.nodeB.id == fida))
-                            && p.op == op);
+            any = nodes.stream().anyMatch(p -> p.nodeA != null && p.nodeB != null && p.op == op &&
+                    ((p.nodeA.id == fida && p.nodeB.id == fidb) || (p.nodeA.id == fidb && p.nodeB.id == fida))
+            );
         } while (
-                any && ++count < 10
+                any && ++count < 20
         );
-        if (count > 9) throw new RuntimeException("WARNING CONFLIC i:" + id + " count:" + count);
+        if (count > 19)
+            throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + ida + " count:" + count);
         return Arrays.asList(ida, idb);
     }
 
@@ -104,11 +90,11 @@ public class Node {
     }
 
     private Value boolIntInteraction(Value bl, Value nt) {
-        return bl.bool == (op < MAX_OP / 2) ? nt : new Value();
+        return bl.bool ? nt : new Value();
     }
 
     public void evaluate(List<InOut> map) {
-        if (isCompute()) {
+        if (isLegitComputeWithParent()) {
             Value out, exp, lout = new Value(), lexp = new Value();
             for (int i = 0; i < outs.size(); i++) {
                 out = outs.get(i);
@@ -122,55 +108,94 @@ public class Node {
         }
     }
 
-    public void backProp(List<Node> nodes) {
-        if (isCompute() && asParent()) {
+    public static double calcAverage(List<Short> numbers) {
+        if (numbers.isEmpty()) return 0.0;
+        return numbers.stream()
+                .mapToInt(Short::shortValue)
+                .average().getAsDouble();
+    }
+
+    public void backProp() {
+        if (isLegitComputeWithParent()) {
             double lowerLimit = this.avgEval - BACK_PROP_LOSS;
             List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
 
             for (Node p : parents) {
-                if (p.isCompute()) {
+                if (p.isLegitComputeWithParent()) {
                     if (p.avgEval < lowerLimit) {
                         //Give credit to parents
                         p.avgEval = lowerLimit;
-                        p.backProp(nodes);
-                    } else if (p.avgEval >= avgEval) {
-                        //Better parent. remove the child(s)
-                        prepareForDelete();
+                        p.backProp();
                     }
                 }
             }
         }
     }
 
+    public void forwardPropChild() {
+        if (isLegitComputeWithParent()) {
+            List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
+
+            for (Node p : parents) {
+                if (p.isLegitComputeWithParent()) {
+                    if (p.avgEval >= avgEval) {
+                        //Better parent. remove the child(s)
+                        prepareForDelete(25.25);
+                    }
+                }
+            }
+        }
+    }
+
+    public void removeDuplicates(List<Node> nodes) {
+        if (isLegitComputeWithParent() && avgEval > 0.0 && avgEval < 80.0) {
+            for (int i = id + 1; i < nodes.size(); i++) {
+                Node n = nodes.get(i);
+                if (n.isLegitComputeWithParent() && avgEval == n.avgEval) {
+                    n.prepareForDelete(33.33);
+                    n.childs = null;
+                }
+            }
+        }
+    }
+
     public void cleanUp(double min) {
-        if (isCompute() && avgEval <= min) {
-            prepareForDelete();
+        if (isLegitComputeWithParent() && avgEval < min) {
+            prepareForDelete(44.44);
             childs = null;
         }
     }
 
-    private void prepareForDelete() {
-        avgEval = 0.0;
+    private void prepareForDelete(double og) {
+        avgEval = og;
         nodeA = null;
         nodeB = null;
         outs = null;
         evals = null;
-        if (childs != null) childs.forEach(Node::prepareForDelete);
+        if (childs != null) childs.forEach(n -> n.prepareForDelete(11.11));
     }
 
     public void reset() {
         //Reset outs for next simulation
         outs = new ArrayList<>();
         evals = new ArrayList<>();
-        avgEval = 0.0;
     }
 
     @Override
     public String toString() {
         String ida = nodeA != null ? Integer.toString(nodeA.id) : "N";
         String idb = nodeB != null ? Integer.toString(nodeB.id) : "N";
-        String src_op = isInput() ? "---" : ida + " " + idb + " " + op;
-        return isCompute() && avgEval == 0 ? "_" : id + "[" + src_op + "|" + outs.get(outs.size() - 2) + " " + lastOut() + "|" + avgEval + "]";
+        String src_op = isInput() || nodeA == null ? "---" : ida + " " + idb + " " + op;
+        String outss = (outs == null || outs.isEmpty()) ? "---" : outs.get(outs.size() - 2) + " " + lastOut();
+        return isCompute() && !asParent() ? "_" : id + "[" + src_op + "|" + outss + "|" + avgEval + "]"; //isCompute() && !asParent() ? "_" :
+    }
+
+    private void addChild(Node node) {
+        if (isLegitComputeWithParent()) childs.add(node);
+    }
+
+    private boolean isLegitComputeWithParent() {
+        return isCompute() && asParent();
     }
 
     private Value lastOut() {

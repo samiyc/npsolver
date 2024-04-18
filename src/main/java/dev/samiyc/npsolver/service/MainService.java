@@ -8,8 +8,11 @@ import java.util.List;
 import java.util.Random;
 
 public class MainService {
-    private static final int MAX_ID = 100, NB_INPUT = 4;
-    private static final int MAX_CYCLE = 50000, IO_MAP_NB_ENTRY = 100;
+    public static final short SIMILAR_EVAL_BOOST = 1;
+    public static final int BACK_PROP_LOSS = 1, MAX_OP = 6;
+    public static final int MAX_ID = 1000, NB_INPUT = 4;
+    public static final int MAX_CYCLE = 10000, IO_MAP_NB_ENTRY = 100;
+    public static final double NOISE_LIMIT = 5.0;
     public static Random random = new Random();
 
     /**
@@ -31,20 +34,25 @@ public class MainService {
 
             long computeCt = System.currentTimeMillis();
             nodes.forEach(n -> n.evaluate(map));
-            //System.out.println("\n### EVALUATE > EVALS"); System.out.println(nodes);
+            //System.out.println("\n### EVALUATE > AVG EVALS"); System.out.println(nodes);
 
             long evalCt = System.currentTimeMillis();
-            nodes.forEach(n -> n.backProp(nodes));
+            for (int i = nodes.size()-1; i >= 0; i--) nodes.get(i).backProp();
+            //System.out.println("\n### AVG EVALS & BACK PROPAGATION"); System.out.println(nodes);
+
+            nodes.forEach(Node::forwardPropChild);
+            nodes.forEach(n -> n.removeDuplicates(nodes));
             long backPropCt = System.currentTimeMillis();
 
             min = getMin(nodes);
             max = getMax(nodes);
-            if (max > 95.0 || count+5 > MAX_CYCLE) {
-                System.out.println("\n### AVG EVALS & BACK PROPAGATION");
+            if (max > 95.0 || count + 5 > MAX_CYCLE) {
+                System.out.println("\n### FORWARD PROPAGATION");
                 System.out.println(nodes);
             }
-            if (max < 100) cleanUp(nodes, min, max);
-            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:" + map.get(map.size() - 2).out + " " + map.getLast().out); //System.out.println(nodes);
+            if (max < 100) cleanUp(nodes);
+            System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:" + map.get(map.size() - 2).out + " " + map.getLast().out);
+            //System.out.println(nodes);
 
             performanceInfos(cycleStartCt, initMapCt, computeCt, evalCt, backPropCt);
         }
@@ -76,9 +84,9 @@ public class MainService {
         //System.out.println("\n### THE MAP - nbTest:" + map.size()); System.out.println(map);
     }
 
-    private static void cleanUp(List<Node> nodes, double min, double max) {
-        if (min < max) nodes.forEach(n -> n.cleanUp(min));
-        nodes.removeIf(n -> n.isCompute() && (!n.asParent() || n.avgEval == 0.0));
+    private static void cleanUp(List<Node> nodes) {
+        nodes.forEach(n -> n.cleanUp(NOISE_LIMIT));
+        nodes.removeIf(n -> n.isCompute() && !n.asParent());
         nodes.forEach(Node::reset);
         for (int i = 0; i < MAX_ID; i++) {
             if (i < nodes.size()) nodes.get(i).id = i;

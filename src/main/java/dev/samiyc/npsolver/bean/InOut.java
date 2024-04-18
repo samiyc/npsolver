@@ -15,17 +15,17 @@ public class InOut {
         int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number, d = in.get(3).number;
 
         //  /!\Input Code /!\
-        out = new Value(a > b || c > d ? d + d : b + c);//    KO
-        //out = new Value(a > b && c > d ? a : b);//    OK
-        //out = new Value(a < b ? d * d : b + c);//     OK
-        //out = new Value(a < b ? d : b + c);//         OK
-        //out = new Value(a * a - b * b + c - d);//     OK
-        //out = new Value(a + b + d + d);//             OK
-        //out = new Value(a + b);//                     OK
-        //out = new Value(a < b && c > d);//            OK
-        //out = new Value(a >= 0);//                    OK
-        //out = new Value(a == 0);//                    OK
-        //out = new Value(a > 0);//                     OK
+        //out = new Value(a > b && c > d ? a * d : b + c);//    KO
+        //out = new Value(a > b && c > d ? a : b + c);//        OK
+        //out = new Value(a < b ? d * d : b + c);//             OK
+        //out = new Value(a < b ? d : b + c);//                 OK
+        out = new Value(a * a - b * b + c - d);//             KO
+        //out = new Value(a + b + d + d);//                     OK
+        //out = new Value(a + b);//                             OK
+        //out = new Value(a < b && c > d);//                    OK
+        //out = new Value(a >= 0);//                            OK
+        //out = new Value(a == 0);//                            OK
+        //out = new Value(a > 0);//                             OK
     }
 
     @Override

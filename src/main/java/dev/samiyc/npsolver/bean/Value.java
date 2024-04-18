@@ -21,20 +21,19 @@ public class Value {
     public Value add(Value other) {
         if (bothInt(other)) return new Value(number + other.number);
         if (bothBool(other)) return new Value(bool || other.bool);
-        if (other.isEmpty()) return this;
         if (isEmpty()) return other;
-        return new Value();
+        return this;
     }
 
     public Value mult(Value other) {
         if (bothInt(other)) return new Value(number * other.number);
         if (bothBool(other)) return new Value(bool && other.bool);
-        return new Value();
+        return this;
     }
 
     public Value sup(Value other) {
         if (bothInt(other)) return new Value(number > other.number);
-        return new Value();
+        return this;
     }
 
     public Value alternative(Value other) {
@@ -51,13 +50,13 @@ public class Value {
             if (other.isInt()) return new Value(-other.number);
             if (other.isBool()) return new Value(!other.bool);
         }
-        return new Value();
+        return this;
     }
 
     public Value eq(Value other) {
         if (bothInt(other)) return new Value(number.equals(other.number));
         if (bothBool(other)) return new Value(bool.equals(other.bool));
-        return new Value();
+        return this;
     }
 
     @Override
