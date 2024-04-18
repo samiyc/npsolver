@@ -137,8 +137,8 @@ public class Node {
         }
     }
 
-    public void forwardPropChild() {
-        if (isLegitComputeWithParent()) {
+    public void forwardProp() {
+        if (isLegitComputeWithParent() && avgEval < FOWARD_PROP_UPPER_LIMIT) {
             List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
 
             for (Node p : parents) {

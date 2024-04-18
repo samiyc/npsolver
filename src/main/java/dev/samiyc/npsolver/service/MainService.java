@@ -11,6 +11,7 @@ public class MainService {
     public static final boolean MSG_INFO = false;
     public static final short SIMILAR_EVAL_BOOST = 5;
     public static final int BACK_PROP_LOSS = 1, MAX_OP = 6;
+    public static final int FOWARD_PROP_UPPER_LIMIT = 80;
     public static final int MAX_ID = 500, NB_INPUT = 4;
     public static final int MAX_CYCLE = 10000, IO_MAP_NB_ENTRY = 100;
     public static final double NOISE_LIMIT = 1.0;
@@ -43,7 +44,7 @@ public class MainService {
             min = getMin(nodes);
             max = getMax(nodes);
 
-            nodes.forEach(Node::forwardPropChild);
+            nodes.forEach(Node::forwardProp);
             nodes.forEach(n -> n.removeDuplicates(nodes));
             long backPropCt = System.currentTimeMillis();
 

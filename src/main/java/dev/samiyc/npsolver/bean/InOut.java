@@ -15,15 +15,15 @@ public class InOut {
         int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number, d = in.get(3).number;
 
         //  /!\Input Code /!\
-        //out = new Value(a > b && c > d ? a * d : b + c);//    KO
-        //out = new Value(a > b && c > d ? a : b + c);//        KO 500n
-        //out = new Value(a < b ? d * d : b + c);//             OK
-        //out = new Value(a < b ? d : b + c);//                 OK
-        //out = new Value(a * a - b * b + c - d);//             OK
+        //out = new Value(a > b && c > d ? a * d : b + c);//    OK  500n & 100io / c:6415, nope, 1164
+        //out = new Value(a > b && c > d ? a : b + c);//        OK  500n & 100io / c:11007, 13535, 7204, 1166, nope,
+        out = new Value(a < b ? d * d : b + c);//             OK  500n & 100io / c:115, 333, 941, 3220, 466, 110, 1138
+        //out = new Value(a < b ? d : b + c);//                 OK  500n & 100io / c:134, 75, 57, 208, 193, 76
+        //out = new Value(a * a - b * b + c - d);//             OK  500n & 100io / c:64, 23, 41, 93, 2194, 104
         //out = new Value(a * a - d * d);//                     OK
         //out = new Value(a + b + d + d);//                     OK
         //out = new Value(a + b);//                             OK
-        out = new Value(a < b && c > d);//                     KO 100 Hidden.
+        //out = new Value(a < b && c > d);//                     KO 100 Hidden.
         //out = new Value(a >= 0);//                            OK
         //out = new Value(a == 0);//                            OK
         //out = new Value(a > 0);//                             OK
