@@ -21,42 +21,37 @@ public class Value {
     public Value add(Value other) {
         if (bothInt(other)) return new Value(number + other.number);
         if (bothBool(other)) return new Value(bool || other.bool);
-        if (isEmpty()) return other;
-        return this;
+        return new Value();
     }
 
     public Value mult(Value other) {
         if (bothInt(other)) return new Value(number * other.number);
         if (bothBool(other)) return new Value(bool && other.bool);
-        return this;
+        return new Value();
     }
 
     public Value sup(Value other) {
         if (bothInt(other)) return new Value(number > other.number);
-        return this;
+        return new Value();
     }
 
     public Value alternative(Value other) {
         if (bothInt(other)) return other;
         if (bothBool(other)) return other;
+        if (isEmpty()) return other;
         return this;
     }
 
     public Value minus(Value other) {
         if (bothInt(other)) return new Value(number - other.number);
         if (bothBool(other)) return new Value(!bool.equals(other.bool));
-        if (other.isEmpty()) return this;
-        if (isEmpty()) {
-            if (other.isInt()) return new Value(-other.number);
-            if (other.isBool()) return new Value(!other.bool);
-        }
-        return this;
+        return new Value();
     }
 
-    public Value eq(Value other) {
-        if (bothInt(other)) return new Value(number.equals(other.number));
-        if (bothBool(other)) return new Value(bool.equals(other.bool));
-        return this;
+    public boolean equal(Value other) {
+        if (bothInt(other)) return number.equals(other.number);
+        if (bothBool(other)) return bool.equals(other.bool);
+        return false;
     }
 
     @Override

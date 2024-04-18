@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.Random;
 
 public class MainService {
-    public static final short SIMILAR_EVAL_BOOST = 1;
+    public static final boolean MSG_INFO = false;
+    public static final short SIMILAR_EVAL_BOOST = 5;
     public static final int BACK_PROP_LOSS = 1, MAX_OP = 6;
-    public static final int MAX_ID = 1000, NB_INPUT = 4;
+    public static final int MAX_ID = 500, NB_INPUT = 4;
     public static final int MAX_CYCLE = 10000, IO_MAP_NB_ENTRY = 100;
-    public static final double NOISE_LIMIT = 5.0;
+    public static final double NOISE_LIMIT = 1.0;
     public static Random random = new Random();
 
     /**
@@ -30,33 +31,40 @@ public class MainService {
 
             long initMapCt = System.currentTimeMillis();
             for (InOut io : map) nodes.forEach(n -> n.compute(io));
-            //System.out.println("\n### SIM > OUTS"); System.out.println(nodes);
+            //messageInfoLog("\n### SIM > OUTS", nodes);
 
             long computeCt = System.currentTimeMillis();
             nodes.forEach(n -> n.evaluate(map));
-            //System.out.println("\n### EVALUATE > AVG EVALS"); System.out.println(nodes);
+            messageInfoLog("\n### EVALUATE > AVG EVALS", nodes);
 
             long evalCt = System.currentTimeMillis();
-            for (int i = nodes.size()-1; i >= 0; i--) nodes.get(i).backProp();
-            //System.out.println("\n### AVG EVALS & BACK PROPAGATION"); System.out.println(nodes);
+            for (int i = nodes.size() - 1; i >= 0; i--) nodes.get(i).backProp();
+            messageInfoLog("\n### AVG EVALS & BACK PROPAGATION", nodes);
+            min = getMin(nodes);
+            max = getMax(nodes);
 
             nodes.forEach(Node::forwardPropChild);
             nodes.forEach(n -> n.removeDuplicates(nodes));
             long backPropCt = System.currentTimeMillis();
 
-            min = getMin(nodes);
-            max = getMax(nodes);
-            if (max > 95.0 || count + 5 > MAX_CYCLE) {
+            if (MSG_INFO || max > 95.0 || count + 5 > MAX_CYCLE) {
                 System.out.println("\n### FORWARD PROPAGATION");
                 System.out.println(nodes);
             }
             if (max < 100) cleanUp(nodes);
             System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:" + map.get(map.size() - 2).out + " " + map.getLast().out);
-            //System.out.println(nodes);
+            messageInfoLog("", nodes);
 
             performanceInfos(cycleStartCt, initMapCt, computeCt, evalCt, backPropCt);
         }
         System.out.println();
+    }
+
+    private static void messageInfoLog(String x, List<Node> nodes) {
+        if (MSG_INFO) {
+            if (!x.isEmpty()) System.out.println(x);
+            System.out.println(nodes);
+        }
     }
 
     private static void performanceInfos(long cycleStartCt, long initMapCt, long computeCt, long evalCt, long backPropCt) {

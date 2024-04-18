@@ -6,9 +6,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static dev.samiyc.npsolver.service.EvaluationStaticService.VALUE_FOUND;
 import static dev.samiyc.npsolver.service.MainService.*;
 
 public class Node {
+    public static final String STR_ABCD = "ABCD";
+    public static final String STR_OPERATOR = "+><:-x ";
     public Node nodeA, nodeB;
     public int id, op;
     public double avgEval = 0.0;
@@ -25,6 +28,8 @@ public class Node {
         id = curId;
         op = MAX_OP;
         outs = new ArrayList<>();
+        nodeA = this;
+        nodeB = this;
     }
 
     /**
@@ -50,7 +55,7 @@ public class Node {
         int count = 0, ida, idb, idRdc;
         boolean any;
         do {
-            idRdc = id > 40 ? id / 8 : id - 1;
+            idRdc = id > MAX_ID/2 ? id / 7 : id - 1;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);
             if (ida == idb) idb++;
@@ -79,18 +84,18 @@ public class Node {
             } else if (b.isBool() && a.isInt()) {
                 outs.add(boolIntInteraction(b, a));
             } else {
-                if (op == 0) outs.add(a.add(b));
+                if (op == 0) outs.add(a.add(b)); //STR_OPERATOR
                 else if (op == 1) outs.add(a.sup(b));
-                else if (op == 2) outs.add(a.alternative(b));
-                else if (op == 3) outs.add(a.minus(b));
-                else if (op == 4) outs.add(a.mult(b));
-                else if (op == 5) outs.add(a.eq(b));
+                else if (op == 2) outs.add(b.sup(a));
+                else if (op == 3) outs.add(a.alternative(b));
+                else if (op == 4) outs.add(a.minus(b));
+                else if (op == 5) outs.add(a.mult(b));
             }
         }
     }
 
     private Value boolIntInteraction(Value bl, Value nt) {
-        return bl.bool ? nt : new Value();
+        return bl.bool == (op >= MAX_OP / 2) ? nt : new Value();
     }
 
     public void evaluate(List<InOut> map) {
@@ -140,7 +145,7 @@ public class Node {
                 if (p.isLegitComputeWithParent()) {
                     if (p.avgEval >= avgEval) {
                         //Better parent. remove the child(s)
-                        prepareForDelete(25.25);
+                        prepareForDelete(11.11);
                     }
                 }
             }
@@ -148,12 +153,15 @@ public class Node {
     }
 
     public void removeDuplicates(List<Node> nodes) {
-        if (isLegitComputeWithParent() && avgEval > 0.0 && avgEval < 80.0) {
+        if (isLegitComputeWithParent() && avgEval > 0.0 && avgEval < 100.0) {
+            Value llexp = outs.get(outs.size() - 2), lexp = outs.getLast();
             for (int i = id + 1; i < nodes.size(); i++) {
                 Node n = nodes.get(i);
-                if (n.isLegitComputeWithParent() && avgEval == n.avgEval) {
-                    n.prepareForDelete(33.33);
-                    n.childs = null;
+                if (n.outs != null) {
+                    Value llout = n.outs.get(outs.size() - 2), lout = n.outs.getLast();
+                    if (n.isLegitComputeWithParent() && n.avgEval == avgEval && llout.equal(llexp) && lexp.equal(lout)) {
+                        n.prepareForDelete(33.33);
+                    }
                 }
             }
         }
@@ -162,17 +170,20 @@ public class Node {
     public void cleanUp(double min) {
         if (isLegitComputeWithParent() && avgEval < min) {
             prepareForDelete(44.44);
-            childs = null;
         }
     }
 
     private void prepareForDelete(double og) {
+        removeChilds(og);
+        childs = null;
+    }
+    private void removeChilds(double og) {
         avgEval = og;
         nodeA = null;
         nodeB = null;
         outs = null;
         evals = null;
-        if (childs != null) childs.forEach(n -> n.prepareForDelete(11.11));
+        if (childs != null) childs.forEach(n -> n.removeChilds(22.22));
     }
 
     public void reset() {
@@ -183,11 +194,25 @@ public class Node {
 
     @Override
     public String toString() {
-        String ida = nodeA != null ? Integer.toString(nodeA.id) : "N";
-        String idb = nodeB != null ? Integer.toString(nodeB.id) : "N";
-        String src_op = isInput() || nodeA == null ? "---" : ida + " " + idb + " " + op;
-        String outss = (outs == null || outs.isEmpty()) ? "---" : outs.get(outs.size() - 2) + " " + lastOut();
-        return isCompute() && !asParent() ? "_" : id + "[" + src_op + "|" + outss + "|" + avgEval + "]"; //isCompute() && !asParent() ? "_" :
+        char chOp;
+        String nodeSrcAndOp = "---";
+        if (nodeA != null) {
+            chOp = nodeA.lastOut().isBool() || nodeB.lastOut().isBool() ? '*' : STR_OPERATOR.charAt(op);
+            String ida = toStrId(nodeA);
+            String idb = toStrId(nodeB);
+            nodeSrcAndOp = ida + chOp + idb;
+        }
+        String outss = "---";
+        if (outs != null && !outs.isEmpty()) {
+            outss = outs.get(outs.size() - 2) + " " + lastOut();
+        }
+        String strEval = avgEval == VALUE_FOUND ? ">> "+avgEval+" <<" : ""+avgEval;
+        return !MSG_INFO && isCompute() && !asParent() ? "_" : id + "[" + nodeSrcAndOp + "|" + outss + "|" + strEval + "]"; //isCompute() && !asParent() ? "_" :
+    }
+
+    private String toStrId(Node n) {
+        if (n == null) return "N";
+        return n.id < NB_INPUT ? ""+STR_ABCD.charAt(n.id) : Integer.toString(n.id);
     }
 
     private void addChild(Node node) {

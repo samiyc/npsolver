@@ -16,13 +16,14 @@ public class InOut {
 
         //  /!\Input Code /!\
         //out = new Value(a > b && c > d ? a * d : b + c);//    KO
-        //out = new Value(a > b && c > d ? a : b + c);//        OK
+        //out = new Value(a > b && c > d ? a : b + c);//        KO 500n
         //out = new Value(a < b ? d * d : b + c);//             OK
         //out = new Value(a < b ? d : b + c);//                 OK
-        out = new Value(a * a - b * b + c - d);//             KO
+        //out = new Value(a * a - b * b + c - d);//             OK
+        //out = new Value(a * a - d * d);//                     OK
         //out = new Value(a + b + d + d);//                     OK
         //out = new Value(a + b);//                             OK
-        //out = new Value(a < b && c > d);//                    OK
+        out = new Value(a < b && c > d);//                     KO 100 Hidden.
         //out = new Value(a >= 0);//                            OK
         //out = new Value(a == 0);//                            OK
         //out = new Value(a > 0);//                             OK
