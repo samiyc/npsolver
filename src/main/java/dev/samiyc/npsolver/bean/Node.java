@@ -14,7 +14,7 @@ public class Node {
     public static final String STR_OPERATOR = "+><:-x ";
     public Node nodeA, nodeB;
     public int id, op;
-    public double avgEval = 0.0;
+    public double avgEval = 0.0, maxChildVal = 0.0;
     public List<Value> outs;
     public List<Short> evals;
     public List<Node> childs;
@@ -55,7 +55,7 @@ public class Node {
         int count = 0, ida, idb, idRdc;
         boolean any;
         do {
-            idRdc = id > MAX_ID/2 ? id / 7 : id - 1;
+            idRdc = id > MAX_ID / 2 ? id / 7 : id - 1;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);
             if (ida == idb) idb++;
@@ -99,7 +99,7 @@ public class Node {
     }
 
     public void evaluate(List<InOut> map) {
-        if (isLegitComputeWithParent()) {
+        if (isComputeWithParent()) {
             Value out, exp, lout = new Value(), lexp = new Value();
             for (int i = 0; i < outs.size(); i++) {
                 out = outs.get(i);
@@ -121,15 +121,16 @@ public class Node {
     }
 
     public void backProp() {
-        if (isLegitComputeWithParent()) {
+        if (isComputeWithParent()) {
             double lowerLimit = this.avgEval - BACK_PROP_LOSS;
             List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
 
             for (Node p : parents) {
-                if (p.isLegitComputeWithParent()) {
+                if (p.isComputeWithParent()) {
                     if (p.avgEval < lowerLimit) {
                         //Give credit to parents
                         p.avgEval = lowerLimit;
+                        p.maxChildVal = Math.max(p.maxChildVal, Math.max(avgEval, maxChildVal));
                         p.backProp();
                     }
                 }
@@ -138,12 +139,12 @@ public class Node {
     }
 
     public void forwardProp() {
-        if (isLegitComputeWithParent() && avgEval < FOWARD_PROP_UPPER_LIMIT) {
+        if (isComputeWithParent() && avgEval < FOWARD_PROP_UPPER_LIMIT) {
             List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
 
             for (Node p : parents) {
-                if (p.isLegitComputeWithParent()) {
-                    if (p.avgEval >= avgEval) {
+                if (p.isComputeWithParent()) {
+                    if (p.avgEval >= avgEval && p.avgEval >= maxChildVal) {
                         //Better parent. remove the child(s)
                         prepareForDelete(11.11);
                     }
@@ -153,22 +154,34 @@ public class Node {
     }
 
     public void removeDuplicates(List<Node> nodes) {
-        if (isLegitComputeWithParent() && avgEval > 0.0 && avgEval < 100.0) {
-            Value llexp = outs.get(outs.size() - 2), lexp = outs.getLast();
+        if (isComputeWithParent() && avgEval > 0.0 && avgEval < 100.0) {
             for (int i = id + 1; i < nodes.size(); i++) {
                 Node n = nodes.get(i);
-                if (n.outs != null) {
-                    Value llout = n.outs.get(outs.size() - 2), lout = n.outs.getLast();
-                    if (n.isLegitComputeWithParent() && n.avgEval == avgEval && llout.equal(llexp) && lexp.equal(lout)) {
-                        n.prepareForDelete(33.33);
+                if (n.outs != null && n.isComputeWithParent() && n.avgEval == avgEval) {
+                    int j = 0;
+                    while (j < n.outs.size() && outs.get(j).equal(n.outs.get(j))) j++;
+                    if (j >= n.outs.size()) {
+                        connectChildToGrandParentAndClean(n);
                     }
                 }
             }
         }
     }
 
+    private void connectChildToGrandParentAndClean(Node p) {
+        //Connect childs to gand parent (this)
+        childs.addAll(p.childs);
+        //Update child upper links to parent
+        for (Node c : p.childs) {
+            if (c.nodeA == p) c.nodeA = this;
+            if (c.nodeB == p) c.nodeB = this;
+        }
+        //Delete
+        p.prepareForDelete(33.33);
+    }
+
     public void cleanUp(double min) {
-        if (isLegitComputeWithParent() && avgEval < min) {
+        if (isComputeWithParent() && avgEval < min) {
             prepareForDelete(44.44);
         }
     }
@@ -177,6 +190,7 @@ public class Node {
         removeChilds(og);
         childs = null;
     }
+
     private void removeChilds(double og) {
         avgEval = og;
         nodeA = null;
@@ -206,20 +220,20 @@ public class Node {
         if (outs != null && !outs.isEmpty()) {
             outss = outs.get(outs.size() - 2) + " " + lastOut();
         }
-        String strEval = avgEval == VALUE_FOUND ? ">> "+avgEval+" <<" : ""+avgEval;
+        String strEval = avgEval == VALUE_FOUND ? ">> " + avgEval + " <<" : "" + avgEval;
         return !MSG_INFO && isCompute() && !asParent() ? "_" : id + "[" + nodeSrcAndOp + "|" + outss + "|" + strEval + "]"; //isCompute() && !asParent() ? "_" :
     }
 
     private String toStrId(Node n) {
         if (n == null) return "N";
-        return n.id < NB_INPUT ? ""+STR_ABCD.charAt(n.id) : Integer.toString(n.id);
+        return n.id < NB_INPUT ? "" + STR_ABCD.charAt(n.id) : Integer.toString(n.id);
     }
 
     private void addChild(Node node) {
-        if (isLegitComputeWithParent()) childs.add(node);
+        if (isComputeWithParent()) childs.add(node);
     }
 
-    private boolean isLegitComputeWithParent() {
+    private boolean isComputeWithParent() {
         return isCompute() && asParent();
     }
 
