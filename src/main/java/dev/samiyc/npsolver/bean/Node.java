@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static dev.samiyc.npsolver.service.EvaluationStaticService.VALUE_FOUND;
-import static dev.samiyc.npsolver.service.MainService.*;
+import static dev.samiyc.npsolver.service.MainStaticService.*;
 
 public class Node {
     public static final String STR_ABCD = "ABCD";
@@ -159,7 +159,7 @@ public class Node {
                 Node n = nodes.get(i);
                 if (n.outs != null && n.isComputeWithParent() && n.avgEval == avgEval) {
                     int j = 0;
-                    while (j < n.outs.size() && outs.get(j).equal(n.outs.get(j))) j++;
+                    while (j < n.outs.size() && outs.get(j).equals(n.outs.get(j))) j++;
                     if (j >= n.outs.size()) {
                         connectChildToGrandParentAndClean(n);
                     }

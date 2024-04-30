@@ -12,8 +12,13 @@ public class InOut {
         in = new ArrayList<>();
         Random random = new Random();
         for (int i = nbInupt; i > 0; i--) in.add(new Value(random.nextInt(100) - 50));
-        int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number, d = in.get(3).number;
 
+        out = calcOut();
+    }
+
+    public Value calcOut() {
+        int a = in.get(0).number, b = in.get(1).number, c = in.get(2).number, d = in.get(3).number;
+        Value out;
         //  /!\Input Code /!\
         //out = new Value(a > b && c > d ? a * d : b + c);//    OK  500n & 100io / c:6415, nope, 1164
         //out = new Value(a > b && c > d ? a : b + c);//        OK  500n & 100io / c:11007, 13535, 7204, 1166, nope,
@@ -27,6 +32,7 @@ public class InOut {
         //out = new Value(a >= 0);//                            OK
         //out = new Value(a == 0);//                            OK
         //out = new Value(a > 0);//                             OK
+        return out;
     }
 
     @Override

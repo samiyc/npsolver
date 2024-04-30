@@ -2,15 +2,13 @@ package dev.samiyc.npsolver.service;
 
 import dev.samiyc.npsolver.bean.Value;
 
-import static dev.samiyc.npsolver.service.MainService.SIMILAR_EVAL_BOOST;
+import static dev.samiyc.npsolver.service.MainStaticService.SIMILAR_EVAL_BOOST;
 
 public class EvaluationStaticService {
     public static final int VALUE_FOUND = 100;
 
-    /**
-     * Lock the constructor to make sure it stay instanceLess
-     */
     private EvaluationStaticService() {
+        /* Lock the constructor to make sure it stay static */
     }
 
     public static int eval(int valOut, int valExp, int valOutDif, int valExpDif) {
@@ -24,16 +22,14 @@ public class EvaluationStaticService {
 
     public static short eval(Value out, Value exp, Value outDif, Value expDif) {
         short eval = 0;
-        if (out.bothInt(exp)) {
-            if (out.number.equals(exp.number)) {
-                eval = VALUE_FOUND;
-            } else {
-                eval += compareValues(out.number, exp.number);
-                eval += compareValues(outDif.number, expDif.number);
-            }
-        } else if (out.bothBool(exp) && out.bool.equals(exp.bool)) {
+        if (out.equals(exp)) {
             eval = VALUE_FOUND;
-        } else if (exp.isBool() && exp.bool.equals(!out.isEmpty())) {
+        }
+        else if (out.bothInt(exp)) {
+            eval += compareValues(out.number, exp.number);
+            eval += compareValues(outDif.number, expDif.number);
+        }
+        else if (!out.isBool() && exp.isBool() && exp.bool.equals(!out.isEmpty())) {
             eval = VALUE_FOUND;
         }
         return eval;
@@ -49,9 +45,5 @@ public class EvaluationStaticService {
 
     public static short evaluate(boolean b) {
         return b ? SIMILAR_EVAL_BOOST : 0;
-    }
-
-    private static boolean absMatch(Value a, Value b) {
-        return Math.abs(a.number) == Math.abs(b.number);
     }
 }

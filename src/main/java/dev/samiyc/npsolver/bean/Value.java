@@ -48,7 +48,9 @@ public class Value {
         return new Value();
     }
 
-    public boolean equal(Value other) {
+    @Override
+    public boolean equals(Object otherObj) {
+        if (!(otherObj instanceof Value other)) return false;
         if (bothInt(other)) return number.equals(other.number);
         if (bothBool(other)) return bool.equals(other.bool);
         return false;

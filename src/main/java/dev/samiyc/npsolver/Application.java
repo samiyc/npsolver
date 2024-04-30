@@ -1,12 +1,11 @@
 package dev.samiyc.npsolver;
 
-import dev.samiyc.npsolver.service.MainService;
+import dev.samiyc.npsolver.service.MainStaticService;
 
 public class Application {
 
     public static void main(String[] W) {
-        MainService mainService = new MainService();
-        mainService.run();
+        MainStaticService.run();
     }
 
 }//End of Application
