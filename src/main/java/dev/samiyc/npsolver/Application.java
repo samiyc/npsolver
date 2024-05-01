@@ -5,7 +5,7 @@ import dev.samiyc.npsolver.service.MainStaticService;
 public class Application {
 
     public static void main(String[] W) {
-        MainStaticService.run();
+        MainStaticService.run(12);
     }
 
 }//End of Application

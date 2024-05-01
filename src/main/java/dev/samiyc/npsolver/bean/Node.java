@@ -84,7 +84,7 @@ public class Node {
             } else if (b.isBool() && a.isInt()) {
                 outs.add(boolIntInteraction(b, a));
             } else {
-                if (op == 0) outs.add(a.add(b)); //STR_OPERATOR
+                if (op == 0) outs.add(a.add(b));
                 else if (op == 1) outs.add(a.sup(b));
                 else if (op == 2) outs.add(b.sup(a));
                 else if (op == 3) outs.add(a.alternative(b));
@@ -237,7 +237,7 @@ public class Node {
         return isCompute() && asParent();
     }
 
-    private Value lastOut() {
+    public Value lastOut() {
         if (outs.isEmpty()) return new Value();
         return outs.getLast();
     }

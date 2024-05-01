@@ -24,21 +24,22 @@ public class MainStaticService {
     /**
      * Main entry point
      */
-    public static void run() {
+    public static List<Node> run(int problemId) {
         List<Node> nodes = initNodes();
 
         double max = 0; int count = 0;
         while (max < 100 && count++ < MAX_CYCLE) {
-            max = DoOneCycle(nodes, IO_MAP_NB_ENTRY, NB_INPUT, count);
+            max = DoOneCycle(nodes, IO_MAP_NB_ENTRY, NB_INPUT, count,  problemId);
         }
         System.out.println();
+        return nodes;
     }
 
-    public static double DoOneCycle(List<Node> nodes, int ioNbEntry, int nbInput, int count) {
+    public static double DoOneCycle(List<Node> nodes, int ioNbEntry, int nbInput, int count, int problemId) {
         double max;
         double min;
         long cycleStartCt = System.currentTimeMillis();
-        List<InOut> map = initMap(ioNbEntry, nbInput);
+        List<InOut> map = initMap(ioNbEntry, nbInput, problemId);
 
         long initMapCt = System.currentTimeMillis();
         for (InOut io : map) nodes.forEach(n -> n.compute(io));
@@ -62,7 +63,7 @@ public class MainStaticService {
             System.out.println("\n### FORWARD PROPAGATION");
             System.out.println(nodes);
         }
-        if (max < 100) cleanUp(nodes);
+        if (max < 100) cleanUp(nodes, MAX_ID);
         System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:" + map.get(map.size() - 2).out + " " + map.getLast().out);
         messageInfoLog("", nodes);
 
@@ -96,18 +97,18 @@ public class MainStaticService {
         return nodes;
     }
 
-    public static List<InOut> initMap(int nbIOEntry, int nbInputs) {
+    public static List<InOut> initMap(int nbIOEntry, int nbInputs, int problemId) {
         List<InOut> map = new ArrayList<>();
-        for (int j = 0; j < nbIOEntry; j++) map.add(new InOut(nbInputs));
+        for (int j = 0; j < nbIOEntry; j++) map.add(new InOut(nbInputs, problemId));
         //System.outprintln("\n### THE MAP - nbTest:" + map.size()); System.out.println(map);
         return map;
     }
 
-    public static void cleanUp(List<Node> nodes) {
+    public static void cleanUp(List<Node> nodes, int maxId) {
         nodes.forEach(n -> n.cleanUp(NOISE_LIMIT));
         nodes.removeIf(n -> n.isCompute() && !n.asParent());
         nodes.forEach(Node::reset);
-        for (int i = 0; i < MAX_ID; i++) {
+        for (int i = 0; i < maxId; i++) {
             if (i < nodes.size()) nodes.get(i).id = i;
             else {
                 nodes.add(new Node(nodes, i));

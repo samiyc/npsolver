@@ -2,47 +2,73 @@ package dev.samiyc.npsolver.service;
 
 import dev.samiyc.npsolver.bean.InOut;
 import dev.samiyc.npsolver.bean.Node;
+import dev.samiyc.npsolver.bean.NodeTest;
+import dev.samiyc.npsolver.bean.Value;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-class MainStaticServiceTest {
+import static dev.samiyc.npsolver.service.MainStaticService.*;
 
-    @Test
-    void run() {
-    }
+class MainStaticServiceTest {
 
     @Test
     void doOneCycle() {
     }
 
     @Test
-    void messageInfoLog() {
-    }
-
-    @Test
-    void performanceInfos() {
-    }
-
-    @Test
     void initNodes() {
+        List<Node> nodes = MainStaticService.initNodes();
+        int nbInputs = (int) nodes.stream().filter(n -> n.op == MAX_OP).count();
+
+        Assertions.assertEquals(MAX_ID, nodes.size());
+        Assertions.assertEquals(NB_INPUT, nbInputs);
     }
 
     @Test
-    void callinitMap__() {
-        List<InOut> inOuts = MainStaticService.initMap(11, 7);
+    void cleanUp_BelowNoiseLimit() {
+        List<Node> nodes = NodeTest.initInputNode(new Value(-11), new Value(-11));
+        Node n = new Node(nodes, 2);
+        n.avgEval = 0.1;
+        nodes.add(n);
+        Assertions.assertNotNull(n.nodeA);
+        Assertions.assertNotNull(n.nodeB);
+        MainStaticService.cleanUp(nodes, 3);
+        Assertions.assertNull(n.nodeA);
+        Assertions.assertNull(n.nodeB);
+        Assertions.assertEquals(44.44, n.avgEval);
+        Assertions.assertEquals(0, nodes.get(0).lastOut().number);
+        Assertions.assertEquals(0, nodes.get(1).lastOut().number);
+        Node nn = nodes.get(2);
+        Assertions.assertNotEquals(n, nn);
+    }
+
+    @Test
+    void cleanUp_NoCleanUp() {
+        List<Node> nodes = NodeTest.initInputNode(new Value(-11), new Value(-11));
+        Node n = new Node(nodes, 2);
+        n.avgEval = 50;
+        nodes.add(n);
+        MainStaticService.cleanUp(nodes, 3);
+        Assertions.assertEquals(nodes.get(0), n.nodeA);
+        Assertions.assertEquals(nodes.get(1), n.nodeB);
+        Assertions.assertEquals(n, nodes.get(2));
+    }
+
+    @Test
+    void callinitMap_checkOuts() {
+        int problemId = 12;
+        List<InOut> inOuts = MainStaticService.initMap(11, 7, problemId);
         Assertions.assertEquals(11, inOuts.size());
-        Assertions.assertEquals(7, inOuts.get(0).in.size());
+        Assertions.assertEquals(7, inOuts.getFirst().in.size());
 
-        for(InOut io : inOuts) {
-            Assertions.assertEquals(io.calcOut(), io.out);
+        for (InOut io : inOuts) {
+            Assertions.assertEquals(io.calcOut(problemId), io.out);
         }
-    }
-
-    @Test
-    void cleanUp_with_expect() {
+        //Quickly check InOut toString()
+        Assertions.assertTrue(inOuts.getFirst().toString().matches(".* => .*"));
     }
 
     @Test
@@ -81,5 +107,39 @@ class MainStaticServiceTest {
         Assertions.assertEquals(11.0, MainStaticService.getMax(nodes));
         nodes.get(3).avgEval = -12;
         Assertions.assertEquals(11.0, MainStaticService.getMax(nodes));
+    }
+
+    @Test
+    void run_withProblemId_1() {
+        run_withProblemId(1);
+    }
+    @Test
+    void run_withProblemId_2() {
+        run_withProblemId(2);
+    }
+    @Test
+    void run_withProblemId_3() {
+        run_withProblemId(3);
+    }
+    @Test
+    void run_withProblemId_4() {
+        run_withProblemId(4);
+    }
+    @Test
+    void run_withProblemId_5() {
+        run_withProblemId(5);
+    }
+    @Test
+    void run_withProblemId_6() {
+        run_withProblemId(6);
+    }
+    @Test
+    void run_withProblemId_7() {
+        run_withProblemId(7);
+    }
+
+    private static void run_withProblemId(int problemId) {
+        List<Node> nodes = MainStaticService.run(problemId);
+        Assertions.assertTrue(nodes.stream().anyMatch(n -> n.avgEval == 100));
     }
 }
