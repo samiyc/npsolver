@@ -177,6 +177,7 @@ public class Node {
             if (c.nodeB == p) c.nodeB = this;
         }
         //Delete
+        p.childs = null; // Ignore the childs in this case
         p.prepareForDelete(33.33);
     }
 
