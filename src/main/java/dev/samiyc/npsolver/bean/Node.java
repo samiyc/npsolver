@@ -11,7 +11,7 @@ import static dev.samiyc.npsolver.service.MainStaticService.*;
 
 public class Node {
     public static final String STR_ABCD = "ABCD";
-    public static final String STR_OPERATOR = "+><:-xd# ";
+    public static final String STR_OPERATOR = "+-x>:h#la ";
     public Node nodeA, nodeB;
     public int id, op;
     public double avgEval = 0.0, maxChildVal = 0.0;
@@ -38,28 +38,29 @@ public class Node {
      * @param nodes use to verif if node is unique
      * @param curId upper limit for node id as source
      */
-    public Node(List<Node> nodes, int curId) {
+    public Node(List<Node> nodes, int curId, int count) {
         id = curId;
         outs = new ArrayList<>();
         evals = new ArrayList<>();
         childs = new ArrayList<>();
-        List<Integer> ids = checkIds(nodes);
+        List<Integer> ids = checkIds(nodes, count);
         nodeA = nodes.stream().filter(p -> p.id == ids.getFirst()).findFirst().get();
         nodeB = nodes.stream().filter(p -> p.id == ids.getLast()).findFirst().get();
         nodeA.addChild(this);
         nodeB.addChild(this);
     }
 
-    private List<Integer> checkIds(List<Node> nodes) {
+    private List<Integer> checkIds(List<Node> nodes, int count) {
         //Randomly choose a unique ida, idb and operator
-        int count = 0, ida, idb, idRdc;
+        int conflict = 0, ida, idb, idRdc;
         boolean any;
         do {
             idRdc = id > 20 ? 20 : id - 1;
+            idRdc = id > MAX_ID/2 ? id/10 : idRdc;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);
             if (ida == idb) idb++;
-            op = random.nextInt(MAX_OP);
+            op = random.nextInt(count % 1000 < 100 ? 3 : MAX_OP);
 
             //Duplicate ? retry 10x
             final int fida = ida, fidb = idb;
@@ -67,10 +68,10 @@ public class Node {
                     ((p.nodeA.id == fida && p.nodeB.id == fidb) || (p.nodeA.id == fidb && p.nodeB.id == fida))
             );
         } while (
-                any && ++count < 20
+                any && ++conflict < 30
         );
-        if (count > 19)
-            throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + ida + " count:" + count);
+        if (conflict > 29)
+            throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + ida + " conflict:" + conflict);
         return Arrays.asList(ida, idb);
     }
 
@@ -85,13 +86,15 @@ public class Node {
                 outs.add(boolIntInteraction(b, a));
             } else {
                 if (op == 0) outs.add(a.add(b));
-                else if (op == 1) outs.add(a.sup(b));
-                else if (op == 2) outs.add(b.sup(a));
-                else if (op == 3) outs.add(a.alternative(b));
-                else if (op == 4) outs.add(a.minus(b));
-                else if (op == 5) outs.add(a.mult(b));
-                else if (op == 6) outs.add(a.dist(b));
-                else if (op == 7) outs.add(a.sqrt());
+                else if (op == 1) outs.add(a.minus(b));
+                else if (op == 2) outs.add(a.mult(b));
+                else if (op == 3) outs.add(a.sup(b));
+                else if (op == 4) outs.add(a.alternative(b));
+                else if (op == 5) outs.add(a.hypot(b));
+                else if (op == 6) outs.add(a.sqrt());
+                else if (op == 7) outs.add(a.min(b));
+                else if (op == 8) outs.add(a.abs());
+                else outs.add(a.sup(b));
             }
         }
     }
@@ -141,7 +144,7 @@ public class Node {
     }
 
     public void forwardProp() {
-        if (isComputeWithParent() && avgEval < FOWARD_PROP_UPPER_LIMIT) {
+        if (isComputeWithParent()) {
             List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
 
             for (Node p : parents) {

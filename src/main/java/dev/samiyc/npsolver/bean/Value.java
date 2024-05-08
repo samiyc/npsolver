@@ -35,13 +35,23 @@ public class Value {
         return new Value();
     }
 
-    public Value dist(Value other) {
-        if (bothInt(other)) return new Value((int) Math.sqrt(number * number + other.number * other.number));
+    public Value hypot(Value other) {
+        if (bothInt(other)) return new Value((int) Math.hypot(number, other.number));
         return new Value();
     }
 
     public Value sqrt() {
         if (isInt()) return new Value((int) Math.sqrt(number));
+        return new Value();
+    }
+
+    public Value abs() {
+        if (isInt()) return new Value(Math.abs(number));
+        return new Value();
+    }
+
+    public Value min(Value other) {
+        if (bothInt(other)) return new Value(Math.min(number, other.number));
         return new Value();
     }
 

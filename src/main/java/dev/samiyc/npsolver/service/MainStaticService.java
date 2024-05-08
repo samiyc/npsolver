@@ -9,10 +9,9 @@ import java.util.Random;
 
 public class MainStaticService {
     public static final boolean MSG_INFO = false;
-    public static final int BACK_PROP_LOSS = 1, MAX_OP = 8;
-    public static final int FOWARD_PROP_UPPER_LIMIT = 80;
+    public static final int BACK_PROP_LOSS = 1, MAX_OP = 9;
     public static final int MAX_ID = 500, NB_INPUT = 4;
-    public static final int MAX_CYCLE = 2000, IO_MAP_NB_ENTRY = 100;
+    public static final int MAX_CYCLE = 5000, IO_MAP_NB_ENTRY = 100;
     public static final double NOISE_LIMIT = 1.0;
     public static final Random random = new Random();
 
@@ -38,11 +37,13 @@ public class MainStaticService {
         double max;
         double min;
         long cycleStartCt = System.currentTimeMillis();
-        List<InOut> map = initMap(ioNbEntry, nbInput, problemId);
+
+        if (problemId > 14) ioNbEntry = 20;
+        List<InOut> map = InOut.initMap(ioNbEntry, nbInput, problemId);
 
         long initMapCt = System.currentTimeMillis();
         for (InOut io : map) nodes.forEach(n -> n.compute(io));
-        //messageInfoLog("\n### SIM > OUTS", nodes);
+        messageInfoLog("\n### SIM > OUTS", nodes);
 
         long computeCt = System.currentTimeMillis();
         nodes.forEach(n -> n.evaluate(map));
@@ -91,16 +92,10 @@ public class MainStaticService {
     public static List<Node> initNodes() {
         List<Node> nodes = new ArrayList<>();
         for (int i = 0; i < NB_INPUT; i++) nodes.add(new Node(i)); //INPUT NODE
-        for (int i = NB_INPUT; i < MAX_ID; i++) nodes.add(new Node(nodes, i)); //COMPUTE NODE
-        //System.out.println("\n### NODES - nbNodes:" + nodes.size()); System.out.println(nodes);
-        return nodes;
-    }
+        for (int i = NB_INPUT; i < MAX_ID; i++) nodes.add(new Node(nodes, i, 0)); //COMPUTE NODE
 
-    public static List<InOut> initMap(int nbIOEntry, int nbInputs, int problemId) {
-        List<InOut> map = new ArrayList<>();
-        for (int j = 0; j < nbIOEntry; j++) map.add(new InOut(nbInputs, problemId));
-        //System.outprintln("\n### THE MAP - nbTest:" + map.size()); System.out.println(map);
-        return map;
+        messageInfoLog("\n### Init NODES - nbNodes:" + nodes.size(), nodes);
+        return nodes;
     }
 
     public static void cleanUp(List<Node> nodes, int maxId, int count) {
@@ -111,7 +106,7 @@ public class MainStaticService {
         for (int i = 0; i < maxId; i++) {
             if (i < nodes.size()) nodes.get(i).id = i;
             else {
-                nodes.add(new Node(nodes, i));
+                nodes.add(new Node(nodes, i, count));
             }
         }
     }

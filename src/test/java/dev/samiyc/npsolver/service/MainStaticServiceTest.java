@@ -37,7 +37,7 @@ class MainStaticServiceTest {
     @Test
     void cleanUp_BelowNoiseLimit() {
         List<Node> nodes = NodeTest.initInputNode(new Value(-11), new Value(-11));
-        Node n = new Node(nodes, 2);
+        Node n = new Node(nodes, 2, 0);
         n.avgEval = 0.1;
         nodes.add(n);
         Assertions.assertNotNull(n.nodeA);
@@ -55,7 +55,7 @@ class MainStaticServiceTest {
     @Test
     void cleanUp_NoCleanUp() {
         List<Node> nodes = NodeTest.initInputNode(new Value(-11), new Value(-11));
-        Node n = new Node(nodes, 2);
+        Node n = new Node(nodes, 2, 0);
         n.avgEval = 50;
         nodes.add(n);
         MainStaticService.cleanUp(nodes, 3, 10);
@@ -66,8 +66,8 @@ class MainStaticServiceTest {
 
     @Test
     void callinitMap_checkOuts() {
-        int problemId = 15;
-        List<InOut> inOuts = MainStaticService.initMap(11, 7, problemId);
+        int problemId = 16;
+        List<InOut> inOuts = InOut.initMap(11, 7, problemId);
         Assertions.assertEquals(11, inOuts.size());
         Assertions.assertEquals(7, inOuts.getFirst().in.size());
 
@@ -192,6 +192,23 @@ class MainStaticServiceTest {
     @EnabledIf("isIntegration")
     void run_withProblemId_13() {
         run_withProblemId(13);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_14() {
+        run_withProblemId(14);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_15() {
+        run_withProblemId(15);
+    }
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_16() {
+        run_withProblemId(16);
     }
 
     private static void run_withProblemId(int problemId) {

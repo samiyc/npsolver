@@ -70,7 +70,7 @@ public class NodeTest {
     void compute_allOp_IntInt_expValue() {
         List<Node> nodes = initInputNode(new Value(5), new Value(-11));
         for (int i = 0; i < MAX_OP; i++) {
-            Node nn = new Node(nodes, 2);
+            Node nn = new Node(nodes, 2,200);
             Assertions.assertTrue(nn.lastOut().isEmpty());
             nn.compute(null);
             Assertions.assertFalse(nn.lastOut().isEmpty());
@@ -79,7 +79,7 @@ public class NodeTest {
     }
 
     private static Node createNodeAndCompute(List<Node> nodes, int op) {
-        Node node = new Node(nodes, 2);
+        Node node = new Node(nodes, 2,0);
         node.nodeA = nodes.getFirst();
         node.nodeB = nodes.getLast();
         node.op = op;
@@ -93,7 +93,7 @@ public class NodeTest {
         RuntimeException thrown = assertThrows(
             RuntimeException.class, () -> {
                 for (int i = 0; i <= MAX_OP; i++) {
-                    nodes.add(new Node(nodes, 2));
+                    nodes.add(new Node(nodes, 2,0));
                 }
             },
             "Expected CONFLIC to be thrown, but it didn't"
