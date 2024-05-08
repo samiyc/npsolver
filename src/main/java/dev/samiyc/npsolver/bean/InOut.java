@@ -21,18 +21,21 @@ public class InOut {
         Value rtn = new Value();
 
         //   /!\Input Code /!\
-             if (problemId == 1) rtn = new Value(a == 0);//                            OK
+        if (problemId == 1) rtn = new Value(a == 0);//                                 OK
         else if (problemId == 2) rtn = new Value(a > 0);//                             OK
         else if (problemId == 3) rtn = new Value(a >= 0);//                            OK
         else if (problemId == 4) rtn = new Value(a + b);//                             OK
         else if (problemId == 5) rtn = new Value(a + b + d + d);//                     OK
         else if (problemId == 6) rtn = new Value(a < b && c > d);//                    OK
-        else if (problemId == 7) rtn = new Value(a * a - d * d);//                     OK
-        else if (problemId == 8) rtn = new Value(a * a - b * b + c - d);//             OK  500n & 100io / c:64, 23, 41, 93, 2194, 104
-        else if (problemId == 9) rtn = new Value(a < b ? d : b + c);//                 OK  500n & 100io / c:134, 75, 57, 208, 193, 76
-        else if (problemId == 10) rtn = new Value(a < b ? d * d : b + c);//            OK  500n & 100io / c:115, 333, 941, 3220, 466, 110, 1138
-        else if (problemId == 11) rtn = new Value(a > b && c > d ? a : b + c);//       OK  500n & 100io / c:11007, 13535, 7204, 1166, nope,
-        else if (problemId == 12) rtn = new Value(a > b && c > d ? a * d : b + c);//   OK  500n & 100io / c:6415, nope, 1164, 6382, 2n, 1766
+        else if (problemId == 7) rtn = new Value(Math.min(a, b));//                    OK
+        else if (problemId == 8) rtn = new Value((int) Math.sqrt(a + b));//            OK
+        else if (problemId == 9) rtn = new Value((int) Math.sqrt(a * a + b * b));//    OK
+        else if (problemId == 10) rtn = new Value(a * a - d * d);//                    OK
+        else if (problemId == 11) rtn = new Value(a * a - b * b + c - d);//            OK
+        else if (problemId == 12) rtn = new Value(a < b ? d : b + c);//                OK
+        else if (problemId == 13) rtn = new Value(a < b ? d * d : b + c);//            OK
+        else if (problemId == 14) rtn = new Value(a > b && c > d ? a : b + c);//       KO  500n & 100io / c:nope.. -> dataSet
+        else if (problemId == 15) rtn = new Value(a > b && c > d ? a * d : b + c);//   KO  500n & 100io / c:nope.. -> dataSet
         return rtn;
     }
 
@@ -40,4 +43,5 @@ public class InOut {
     public String toString() {
         return in + " => " + out;
     }
+
 }//End of InOut

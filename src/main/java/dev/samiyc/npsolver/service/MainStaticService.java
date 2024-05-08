@@ -9,11 +9,10 @@ import java.util.Random;
 
 public class MainStaticService {
     public static final boolean MSG_INFO = false;
-    public static final short SIMILAR_EVAL_BOOST = 5;
-    public static final int BACK_PROP_LOSS = 1, MAX_OP = 6;
+    public static final int BACK_PROP_LOSS = 1, MAX_OP = 8;
     public static final int FOWARD_PROP_UPPER_LIMIT = 80;
     public static final int MAX_ID = 500, NB_INPUT = 4;
-    public static final int MAX_CYCLE = 10000, IO_MAP_NB_ENTRY = 100;
+    public static final int MAX_CYCLE = 2000, IO_MAP_NB_ENTRY = 100;
     public static final double NOISE_LIMIT = 1.0;
     public static final Random random = new Random();
 
@@ -29,7 +28,7 @@ public class MainStaticService {
 
         double max = 0; int count = 0;
         while (max < 100 && count++ < MAX_CYCLE) {
-            max = DoOneCycle(nodes, IO_MAP_NB_ENTRY, NB_INPUT, count,  problemId);
+            max = DoOneCycle(nodes, IO_MAP_NB_ENTRY, NB_INPUT, count, problemId);
         }
         System.out.println();
         return nodes;
@@ -59,11 +58,11 @@ public class MainStaticService {
         nodes.forEach(n -> n.removeDuplicates(nodes));
         long backPropCt = System.currentTimeMillis();
 
-        if (MSG_INFO || max > 95.0 || count + 5 > MAX_CYCLE) {
+        if (MSG_INFO || max == 100 || count + 5 > MAX_CYCLE) {
             System.out.println("\n### FORWARD PROPAGATION");
             System.out.println(nodes);
         }
-        if (max < 100) cleanUp(nodes, MAX_ID);
+        if (max < 100) cleanUp(nodes, MAX_ID, count);
         System.out.println("\n###" + count + " CLEAN UP - max:" + max + " min:" + min + " exp:" + map.get(map.size() - 2).out + " " + map.getLast().out);
         messageInfoLog("", nodes);
 
@@ -104,8 +103,9 @@ public class MainStaticService {
         return map;
     }
 
-    public static void cleanUp(List<Node> nodes, int maxId) {
-        nodes.forEach(n -> n.cleanUp(NOISE_LIMIT));
+    public static void cleanUp(List<Node> nodes, int maxId, int count) {
+        double noiseLimit = count % 50 == 0 ? 90 : NOISE_LIMIT;
+        nodes.forEach(n -> n.cleanUp(noiseLimit));
         nodes.removeIf(n -> n.isCompute() && !n.asParent());
         nodes.forEach(Node::reset);
         for (int i = 0; i < maxId; i++) {
@@ -126,4 +126,5 @@ public class MainStaticService {
         return nodes.stream().mapToDouble(Node::getAvgEval)
                 .reduce(Double.MIN_VALUE, Double::max);
     }
-}
+
+}//End of Main.SS

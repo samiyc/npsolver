@@ -11,7 +11,7 @@ import static dev.samiyc.npsolver.service.MainStaticService.*;
 
 public class Node {
     public static final String STR_ABCD = "ABCD";
-    public static final String STR_OPERATOR = "+><:-x ";
+    public static final String STR_OPERATOR = "+><:-xd# ";
     public Node nodeA, nodeB;
     public int id, op;
     public double avgEval = 0.0, maxChildVal = 0.0;
@@ -55,7 +55,7 @@ public class Node {
         int count = 0, ida, idb, idRdc;
         boolean any;
         do {
-            idRdc = id > MAX_ID / 2 ? id / 7 : id - 1;
+            idRdc = id > 20 ? 20 : id - 1;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);
             if (ida == idb) idb++;
@@ -90,6 +90,8 @@ public class Node {
                 else if (op == 3) outs.add(a.alternative(b));
                 else if (op == 4) outs.add(a.minus(b));
                 else if (op == 5) outs.add(a.mult(b));
+                else if (op == 6) outs.add(a.dist(b));
+                else if (op == 7) outs.add(a.sqrt());
             }
         }
     }
@@ -212,7 +214,7 @@ public class Node {
         char chOp;
         String nodeSrcAndOp = "---";
         if (nodeA != null) {
-            chOp = nodeA.lastOut().isBool() || nodeB.lastOut().isBool() ? '*' : STR_OPERATOR.charAt(op);
+            chOp = nodeA.lastOut().isBool() || nodeB.lastOut().isBool() ? 'b' : STR_OPERATOR.charAt(op);
             String ida = toStrId(nodeA);
             String idb = toStrId(nodeB);
             nodeSrcAndOp = ida + chOp + idb;
@@ -258,4 +260,5 @@ public class Node {
     public double getAvgEval() {
         return avgEval;
     }
-}
+
+}//End of Node

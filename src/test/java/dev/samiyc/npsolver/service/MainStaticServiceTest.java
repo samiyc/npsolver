@@ -6,6 +6,7 @@ import dev.samiyc.npsolver.bean.NodeTest;
 import dev.samiyc.npsolver.bean.Value;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +14,12 @@ import java.util.List;
 import static dev.samiyc.npsolver.service.MainStaticService.*;
 
 class MainStaticServiceTest {
+
+    public static final boolean INTEGRATION = true;
+
+    boolean isIntegration() {
+        return INTEGRATION;
+    }
 
     @Test
     void doOneCycle() {
@@ -35,7 +42,7 @@ class MainStaticServiceTest {
         nodes.add(n);
         Assertions.assertNotNull(n.nodeA);
         Assertions.assertNotNull(n.nodeB);
-        MainStaticService.cleanUp(nodes, 3);
+        MainStaticService.cleanUp(nodes, 3, 10);
         Assertions.assertNull(n.nodeA);
         Assertions.assertNull(n.nodeB);
         Assertions.assertEquals(44.44, n.avgEval);
@@ -51,7 +58,7 @@ class MainStaticServiceTest {
         Node n = new Node(nodes, 2);
         n.avgEval = 50;
         nodes.add(n);
-        MainStaticService.cleanUp(nodes, 3);
+        MainStaticService.cleanUp(nodes, 3, 10);
         Assertions.assertEquals(nodes.get(0), n.nodeA);
         Assertions.assertEquals(nodes.get(1), n.nodeB);
         Assertions.assertEquals(n, nodes.get(2));
@@ -59,7 +66,7 @@ class MainStaticServiceTest {
 
     @Test
     void callinitMap_checkOuts() {
-        int problemId = 12;
+        int problemId = 15;
         List<InOut> inOuts = MainStaticService.initMap(11, 7, problemId);
         Assertions.assertEquals(11, inOuts.size());
         Assertions.assertEquals(7, inOuts.getFirst().in.size());
@@ -110,32 +117,81 @@ class MainStaticServiceTest {
     }
 
     @Test
+    @EnabledIf("isIntegration")
     void run_withProblemId_1() {
         run_withProblemId(1);
     }
+
     @Test
+    @EnabledIf("isIntegration")
     void run_withProblemId_2() {
         run_withProblemId(2);
     }
+
     @Test
+    @EnabledIf("isIntegration")
     void run_withProblemId_3() {
         run_withProblemId(3);
     }
+
     @Test
+    @EnabledIf("isIntegration")
     void run_withProblemId_4() {
         run_withProblemId(4);
     }
+
     @Test
+    @EnabledIf("isIntegration")
     void run_withProblemId_5() {
         run_withProblemId(5);
     }
+
     @Test
+    @EnabledIf("isIntegration")
     void run_withProblemId_6() {
         run_withProblemId(6);
     }
+
     @Test
+    @EnabledIf("isIntegration")
     void run_withProblemId_7() {
         run_withProblemId(7);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_8() {
+        run_withProblemId(8);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_9() {
+        run_withProblemId(9);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_10() {
+        run_withProblemId(10);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_11() {
+        run_withProblemId(11);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_12() {
+        run_withProblemId(12);
+    }
+
+    @Test
+    @EnabledIf("isIntegration")
+    void run_withProblemId_13() {
+        run_withProblemId(13);
     }
 
     private static void run_withProblemId(int problemId) {

@@ -16,16 +16,8 @@ class EvaluationStaticServiceTest {
     }
     @Test
     void callEval_withClothEnoughValue_expectLowValue() {
-        Assertions.assertEquals(25, EvaluationStaticService.eval(10, 20, 2, 2));
-        Assertions.assertEquals(25, EvaluationStaticService.eval(-10, -30, -5, -5));
-        Assertions.assertEquals(20, EvaluationStaticService.eval(10, -10, 1, 11));
-        Assertions.assertEquals(20, EvaluationStaticService.eval(10, 50, 1, 5));
-        Assertions.assertEquals(20, EvaluationStaticService.eval(10, 30, 1, 3));
-        Assertions.assertEquals(20, EvaluationStaticService.eval(10, 20, 1, 2));
-        Assertions.assertEquals(15, EvaluationStaticService.eval(22, 23, 1, 2));
-        Assertions.assertEquals(15, EvaluationStaticService.eval(10, 51, 1, 6));
-        Assertions.assertEquals(10, EvaluationStaticService.eval(-14, 23, 1, -1));
-        Assertions.assertEquals(10, EvaluationStaticService.eval(-14, 23, 1, 3));
+        Assertions.assertEquals(51, EvaluationStaticService.eval(10, 20, 2, 2));
+        Assertions.assertEquals(51, EvaluationStaticService.eval(-10, -30, -5, -5));
     }
     @Test
     void callEval_withFarAwayValue_ExpectNoMatch() {

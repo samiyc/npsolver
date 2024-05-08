@@ -35,6 +35,16 @@ public class Value {
         return new Value();
     }
 
+    public Value dist(Value other) {
+        if (bothInt(other)) return new Value((int) Math.sqrt(number * number + other.number * other.number));
+        return new Value();
+    }
+
+    public Value sqrt() {
+        if (isInt()) return new Value((int) Math.sqrt(number));
+        return new Value();
+    }
+
     public Value alternative(Value other) {
         if (bothInt(other)) return other;
         if (bothBool(other)) return other;
@@ -82,4 +92,5 @@ public class Value {
     public boolean isEmpty() {
         return type == ValueType.EMPTY;
     }
-}
+
+}//End of Value
