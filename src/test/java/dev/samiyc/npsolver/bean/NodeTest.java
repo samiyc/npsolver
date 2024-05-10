@@ -1,5 +1,6 @@
 package dev.samiyc.npsolver.bean;
 
+import dev.samiyc.npsolver.service.EvaluationStaticService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -70,7 +71,7 @@ public class NodeTest {
     void compute_allOp_IntInt_expValue() {
         List<Node> nodes = initInputNode(new Value(5), new Value(-11));
         for (int i = 0; i < MAX_OP; i++) {
-            Node nn = new Node(nodes, 2,200);
+            Node nn = new Node(nodes, 2, 200);
             Assertions.assertTrue(nn.lastOut().isEmpty());
             nn.compute(null);
             Assertions.assertFalse(nn.lastOut().isEmpty());
@@ -79,7 +80,7 @@ public class NodeTest {
     }
 
     private static Node createNodeAndCompute(List<Node> nodes, int op) {
-        Node node = new Node(nodes, 2,0);
+        Node node = new Node(nodes, 2, 0);
         node.nodeA = nodes.getFirst();
         node.nodeB = nodes.getLast();
         node.op = op;
@@ -91,18 +92,80 @@ public class NodeTest {
     void checkIds_expConflict() {
         List<Node> nodes = initInputNode(new Value(true), new Value(-11));
         RuntimeException thrown = assertThrows(
-            RuntimeException.class, () -> {
-                for (int i = 0; i <= MAX_OP; i++) {
-                    nodes.add(new Node(nodes, 2,0));
-                }
-            },
-            "Expected CONFLIC to be thrown, but it didn't"
+                RuntimeException.class, () -> {
+                    for (int i = 0; i <= MAX_OP; i++) {
+                        nodes.add(new Node(nodes, 2, 0));
+                    }
+                },
+                "Expected CONFLIC to be thrown, but it didn't"
         );
         Assertions.assertTrue(thrown.getMessage().contains("CONFLIC"));
     }
 
     @Test
-    void evaluate() {
+    void evaluate_withSumOp_expSumAndAvgEvalAsValueFound() {
+        int problemId = 4;
+
+        //Init nodes
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        Node thrdNod = new Node(nodes, 2, 0);
+        thrdNod.nodeA = nodes.getFirst();
+        thrdNod.nodeB = nodes.getLast();
+        thrdNod.op = 0;
+        nodes.add(thrdNod);
+
+        //Init the map
+        List<InOut> map = new ArrayList<>();
+        map.add(new InOut(problemId, Arrays.asList(-5, -10, 50, 45)));
+        map.add(new InOut(problemId, Arrays.asList(50, 45, -5, -10)));
+        map.add(new InOut(problemId, Arrays.asList(50, -50, 71, -23)));
+        map.add(new InOut(problemId, Arrays.asList(71, -23, 50, -50)));
+
+        //Compute & Evaluate
+        for (InOut io : map) nodes.forEach(n -> n.compute(io));
+        nodes.forEach(n -> n.evaluate(map));
+
+        //Asserts
+        Assertions.assertEquals(EvaluationStaticService.VALUE_FOUND, thrdNod.avgEval);
+        Assertions.assertEquals(-15, thrdNod.outs.get(0).number);
+        Assertions.assertEquals(95, thrdNod.outs.get(1).number);
+        Assertions.assertEquals(0, thrdNod.outs.get(2).number);
+        Assertions.assertEquals(48, thrdNod.outs.get(3).number);
+    }
+
+    @Test
+    void callEvaluate_withBadOp_expLowAvgEval() {
+        int problemId = 4;
+
+        //Init nodes
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        Node thrdNod = new Node(nodes, 2, 0);
+        thrdNod.nodeA = nodes.getFirst();
+        thrdNod.nodeB = nodes.getLast();
+        thrdNod.op = 1;
+        nodes.add(thrdNod);
+
+        //Init the map
+        List<InOut> map = new ArrayList<>();
+        map.add(new InOut(problemId, Arrays.asList(-5, -10, 50, 45)));
+        map.add(new InOut(problemId, Arrays.asList(50, 45, -5, -10)));
+        map.add(new InOut(problemId, Arrays.asList(50, -50, 71, -23)));
+        map.add(new InOut(problemId, Arrays.asList(71, -23, 50, -50)));
+
+        //Compute & Evaluate
+        for (InOut io : map) nodes.forEach(n -> n.compute(io));
+        nodes.forEach(n -> n.evaluate(map));
+
+        //Asserts
+        Assertions.assertNotEquals(EvaluationStaticService.VALUE_FOUND, thrdNod.avgEval);
+        Assertions.assertEquals(5, thrdNod.outs.get(0).number);
+        Assertions.assertEquals(5, thrdNod.outs.get(1).number);
+        Assertions.assertEquals(100, thrdNod.outs.get(2).number);
+        Assertions.assertEquals(94, thrdNod.outs.get(3).number);
     }
 
     @Test
@@ -127,11 +190,90 @@ public class NodeTest {
     }
 
     @Test
-    void backProp() {
+    void backProp_withParentLower_expParentAvgEvalIncrease() {
+        //Init nodes
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        Node thrdNod = addNewNode(nodes, 2, 1, 10);
+        Node frthNod = addNewNode(nodes, 3, 1, 21);
+        //Function call
+        frthNod.backProp();
+        //Evals
+        Assertions.assertEquals(20.0, thrdNod.avgEval);
     }
 
     @Test
-    void forwardProp() {
+    void backProp_withParentHigher_expNoChange() {
+        //Init nodes
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        Node thrdNod = addNewNode(nodes, 2, 1, 21);
+        Node frthNod = addNewNode(nodes, 3, 1, 11);
+        //Function call
+        frthNod.backProp();
+        //Evals
+        Assertions.assertEquals(21.0, thrdNod.avgEval);
+    }
+
+    private static Node addNewNode(List<Node> nodes, int curId, int op, int avgEval) {
+        Node frthNod = new Node(nodes, curId, 0);
+        frthNod.nodeA = nodes.getFirst();
+        frthNod.nodeB = nodes.getLast();
+        frthNod.op = op;
+        frthNod.avgEval = avgEval;
+        nodes.add(frthNod);
+        return frthNod;
+    }
+
+    @Test
+    void forwardProp_withParentHigher_expFrthNodeRemoved() {
+        //Init nodes
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        Node thrdNod = addNewNode(nodes, 2, 1, 21);
+        Node frthNod = addNewNode(nodes, 3, 1, 10);
+        //Function call
+        frthNod.forwardProp();
+
+        //Evals
+        //Node 3
+        Assertions.assertTrue(thrdNod.isComputeWithParent());
+        Assertions.assertEquals(21.0, thrdNod.avgEval);
+        //Node 4
+        Assertions.assertFalse(frthNod.isComputeWithParent());
+        Assertions.assertNull(frthNod.nodeA);
+        Assertions.assertNull(frthNod.nodeB);
+        Assertions.assertNull(frthNod.outs);
+        Assertions.assertNull(frthNod.evals);
+        Assertions.assertNull(frthNod.childs);
+    }
+
+    @Test
+    void forwardProp_withParentLower_expNoChange() {
+        //Init nodes
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        Node thrdNod = addNewNode(nodes, 2, 1, 10);
+        Node frthNod = addNewNode(nodes, 3, 1, 21);
+        //Function call
+        frthNod.forwardProp();
+
+        //Evals
+        //Node 3
+        Assertions.assertTrue(thrdNod.isComputeWithParent());
+        Assertions.assertEquals(10.0, thrdNod.avgEval);
+        //Node 4
+        Assertions.assertTrue(frthNod.isComputeWithParent());
+        Assertions.assertEquals(21.0, frthNod.avgEval);
+        Assertions.assertNotNull(frthNod.nodeA);
+        Assertions.assertNotNull(frthNod.nodeB);
+        Assertions.assertNotNull(frthNod.outs);
+        Assertions.assertNotNull(frthNod.evals);
+        Assertions.assertNotNull(frthNod.childs);
     }
 
     @Test

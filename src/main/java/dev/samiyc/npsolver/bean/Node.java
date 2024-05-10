@@ -94,7 +94,6 @@ public class Node {
                 else if (op == 6) outs.add(a.sqrt());
                 else if (op == 7) outs.add(a.min(b));
                 else if (op == 8) outs.add(a.abs());
-                else outs.add(a.sup(b));
             }
         }
     }
@@ -239,7 +238,7 @@ public class Node {
         if (isComputeWithParent()) childs.add(node);
     }
 
-    private boolean isComputeWithParent() {
+    public boolean isComputeWithParent() {
         return isCompute() && asParent();
     }
 
