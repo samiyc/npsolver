@@ -1,6 +1,7 @@
 package dev.samiyc.npsolver.bean;
 
 import dev.samiyc.npsolver.service.EvaluationStaticService;
+import dev.samiyc.npsolver.service.MainStaticService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -195,12 +196,12 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = addNewNode(nodes, 2, 1, 10);
-        Node frthNod = addNewNode(nodes, 3, 1, 21);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 10);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 21);
         //Function call
         frthNod.backProp();
         //Evals
-        Assertions.assertEquals(20.0, thrdNod.avgEval);
+        Assertions.assertEquals(21.0, thrdNod.avgEval);
     }
 
     @Test
@@ -209,22 +210,27 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = addNewNode(nodes, 2, 1, 21);
-        Node frthNod = addNewNode(nodes, 3, 1, 11);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 21);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 11);
         //Function call
         frthNod.backProp();
         //Evals
         Assertions.assertEquals(21.0, thrdNod.avgEval);
     }
 
-    private static Node addNewNode(List<Node> nodes, int curId, int op, int avgEval) {
-        Node frthNod = new Node(nodes, curId, 0);
-        frthNod.nodeA = nodes.getFirst();
-        frthNod.nodeB = nodes.getLast();
-        frthNod.op = op;
-        frthNod.avgEval = avgEval;
-        nodes.add(frthNod);
-        return frthNod;
+    private static Node createCustomNode(List<Node> nodes, int ida, int idb, int curId, int op, int avgEval) {
+        Node customNode = new Node(curId);
+        customNode.outs = new ArrayList<>();
+        customNode.evals = new ArrayList<>();
+        customNode.childs = new ArrayList<>();
+        customNode.nodeA = nodes.get(ida);
+        customNode.nodeB = nodes.get(idb);
+        customNode.nodeA.addChild(customNode);
+        customNode.nodeB.addChild(customNode);
+        customNode.op = op;
+        customNode.avgEval = avgEval;
+        nodes.add(customNode);
+        return customNode;
     }
 
     @Test
@@ -233,8 +239,8 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = addNewNode(nodes, 2, 1, 21);
-        Node frthNod = addNewNode(nodes, 3, 1, 10);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 21);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 10);
         //Function call
         frthNod.forwardProp();
 
@@ -257,8 +263,8 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = addNewNode(nodes, 2, 1, 10);
-        Node frthNod = addNewNode(nodes, 3, 1, 21);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 10);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 21);
         //Function call
         frthNod.forwardProp();
 
@@ -278,6 +284,54 @@ public class NodeTest {
 
     @Test
     void removeDuplicates() {
+        int problemId = 3;
+
+        //Init the map
+        List<InOut> map = new ArrayList<>();
+        map.add(new InOut(problemId, Arrays.asList(-5, -10, 50, 45)));
+        map.add(new InOut(problemId, Arrays.asList(50, 45, -5, -10)));
+        map.add(new InOut(problemId, Arrays.asList(50, -50, 71, -23)));
+        map.add(new InOut(problemId, Arrays.asList(71, -23, 50, -50)));
+
+        //Init nodes
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        nodes.add(new Node(2));
+        nodes.add(new Node(3));
+        Node nodeA = createCustomNode(nodes, 0, 1, 4, 2, 10);
+        Node nodeB = createCustomNode(nodes, 0, 4, 5, 4, 10);
+        Node nodeC = createCustomNode(nodes, 0, 5, 6, 0, 10);
+
+        //Function call
+        for (InOut io : map) nodes.forEach(n -> n.compute(io));
+        nodes.forEach(n -> n.evaluate(map));
+        nodes.forEach(n -> n.removeDuplicates(nodes));
+        Assertions.assertEquals("4[AxB|-2500 -1633|75.0]", nodeA.toString());
+        Assertions.assertEquals("_", nodeB.toString());
+        Assertions.assertEquals("6[A+4|-2450 -1562|75.0]", nodeC.toString());
+        //clean up
+        MainStaticService.cleanUp(nodes, 6, 10);
+        Assertions.assertEquals("4[AxB|---|75.0]", nodeA.toString());
+        Assertions.assertEquals("5[A+4|---|75.0]", nodeC.toString());
+
+        //Verifications
+        //Node A
+        Assertions.assertTrue(nodeA.isComputeWithParent());
+        Assertions.assertFalse(nodeA.childs.contains(nodeB));
+        Assertions.assertTrue(nodeA.childs.contains(nodeC));
+        //Node B
+        Assertions.assertFalse(nodes.contains(nodeB));
+        Assertions.assertFalse(nodeB.isComputeWithParent());
+        Assertions.assertNull(nodeB.nodeA);
+        Assertions.assertNull(nodeB.nodeB);
+        Assertions.assertNull(nodeB.outs);
+        Assertions.assertNull(nodeB.evals);
+        Assertions.assertNull(nodeB.childs);
+        //Node C
+        Assertions.assertTrue(nodeC.isComputeWithParent());
+        Assertions.assertEquals(0, nodeC.nodeA.id);
+        Assertions.assertEquals(4, nodeC.nodeB.id);
     }
 
     @Test

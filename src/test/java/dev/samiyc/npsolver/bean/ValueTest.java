@@ -192,6 +192,140 @@ class ValueTest {
     }
 
     @Test
+    void hypot_withNumber_expCalcOk() {
+        Value out;
+        Value a = new Value(23);
+        Value b = new Value(-11);
+        Value c = new Value(77);
+        // hypot(a, b) => 25
+        out = a.hypot(b);
+        Assertions.assertEquals(25, out.number);
+        Assertions.assertTrue(out.isInt());
+        // hypot(b, c) => 77
+        out = b.hypot(c);
+        Assertions.assertEquals(77, out.number);
+        Assertions.assertTrue(out.isInt());
+        // hypot(a, c) => 80
+        out = a.hypot(c);
+        Assertions.assertEquals(80, out.number);
+        Assertions.assertTrue(out.isInt());
+    }
+
+    @Test
+    void hypot_withBool_expEmpty() {
+        Value out;
+        Value a = new Value(23);
+        Value b = new Value(true);
+        Value c = new Value(77);
+        // hypot(a, b) => Empty
+        out = a.hypot(b);
+        Assertions.assertTrue(out.isEmpty());
+        // hypot(b, c) => Empty
+        out = b.hypot(c);
+        Assertions.assertTrue(out.isEmpty());
+    }
+
+    @Test
+    void sqrt_withNumber_expCalcOk() {
+        Value out;
+        Value a = new Value(23);
+        Value b = new Value(-11);
+        Value c = new Value(77);
+        // sqrt(a) => 4
+        out = a.sqrt();
+        Assertions.assertEquals(4, out.number);
+        Assertions.assertTrue(out.isInt());
+        // sqrt(b) => 0
+        out = b.sqrt();
+        Assertions.assertEquals(0, out.number);
+        Assertions.assertTrue(out.isInt());
+        // sqrt(c) => 8
+        out = c.sqrt();
+        Assertions.assertEquals(8, out.number);
+        Assertions.assertTrue(out.isInt());
+    }
+
+    @Test
+    void sqrt_withBool_expEmpty() {
+        Value out;
+        Value a = new Value(false);
+        Value b = new Value(true);
+        // sqrt(a) => Empty
+        out = a.sqrt();
+        Assertions.assertTrue(out.isEmpty());
+        // sqrt(b) => Empty
+        out = b.sqrt();
+        Assertions.assertTrue(out.isEmpty());
+    }
+
+    @Test
+    void abs_withNumber_expCalcOk() {
+        Value out;
+        Value a = new Value(23);
+        Value b = new Value(-11);
+        Value c = new Value(0);
+        // abs(a) => 23
+        out = a.abs();
+        Assertions.assertEquals(23, out.number);
+        Assertions.assertTrue(out.isInt());
+        // abs(b) => 11
+        out = b.abs();
+        Assertions.assertEquals(11, out.number);
+        Assertions.assertTrue(out.isInt());
+        // abs(c) => 0
+        out = c.abs();
+        Assertions.assertEquals(0, out.number);
+        Assertions.assertTrue(out.isInt());
+    }
+
+    @Test
+    void abs_withBool_expEmpty() {
+        Value out;
+        Value a = new Value(false);
+        Value b = new Value(true);
+        // abs(a) => Empty
+        out = a.abs();
+        Assertions.assertTrue(out.isEmpty());
+        // abs(b) => Empty
+        out = b.abs();
+        Assertions.assertTrue(out.isEmpty());
+    }
+
+    @Test
+    void min_withNumber_expCalcOk() {
+        Value out;
+        Value a = new Value(23);
+        Value b = new Value(-11);
+        Value c = new Value(0);
+        // min(a, b) => 23
+        out = a.min(b);
+        Assertions.assertEquals(-11, out.number);
+        Assertions.assertTrue(out.isInt());
+        // min(b, c) => 11
+        out = b.min(c);
+        Assertions.assertEquals(-11, out.number);
+        Assertions.assertTrue(out.isInt());
+        // min(c, a) => 0
+        out = c.min(a);
+        Assertions.assertEquals(0, out.number);
+        Assertions.assertTrue(out.isInt());
+    }
+
+    @Test
+    void min_withBool_expEmpty() {
+        Value out;
+        Value a = new Value(23);
+        Value b = new Value(false);
+        Value c = new Value(0);
+        // min(a, b) => 23
+        out = a.min(b);
+        Assertions.assertTrue(out.isEmpty());
+        // min(b, c) => 11
+        out = b.min(c);
+        Assertions.assertTrue(out.isEmpty());
+    }
+
+    @Test
     void equals_withNumber_expTrueFalse() {
         Value out;
         Value a = new Value(23);

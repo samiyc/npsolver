@@ -14,7 +14,7 @@ public class Node {
     public static final String STR_OPERATOR = "+-x>:h#la ";
     public Node nodeA, nodeB;
     public int id, op;
-    public double avgEval = 0.0, maxChildVal = 0.0;
+    public double avgEval = 0.0;
     public List<Value> outs;
     public List<Short> evals;
     public List<Node> childs;
@@ -56,7 +56,7 @@ public class Node {
         boolean any;
         do {
             idRdc = id > 20 ? 20 : id - 1;
-            idRdc = id > MAX_ID/2 ? id/10 : idRdc;
+            idRdc = id > MAX_ID / 2 ? id / 10 : idRdc;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);
             if (ida == idb) idb++;
@@ -126,15 +126,11 @@ public class Node {
 
     public void backProp() {
         if (isComputeWithParent()) {
-            double lowerLimit = this.avgEval - BACK_PROP_LOSS;
-            List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
-
-            for (Node p : parents) {
+            for (Node p : Arrays.asList(this.nodeA, this.nodeB)) {
                 if (p.isComputeWithParent()) {
-                    if (p.avgEval < lowerLimit) {
+                    if (p.avgEval < this.avgEval) {
                         //Give credit to parents
-                        p.avgEval = lowerLimit;
-                        p.maxChildVal = Math.max(p.maxChildVal, Math.max(avgEval, maxChildVal));
+                        p.avgEval = this.avgEval;
                         p.backProp();
                     }
                 }
@@ -144,14 +140,10 @@ public class Node {
 
     public void forwardProp() {
         if (isComputeWithParent()) {
-            List<Node> parents = Arrays.asList(this.nodeA, this.nodeB);
-
-            for (Node p : parents) {
-                if (p.isComputeWithParent()) {
-                    if (p.avgEval >= avgEval && p.avgEval >= maxChildVal) {
-                        //Better parent. remove the child(s)
-                        prepareForDelete(11.11);
-                    }
+            for (Node p : Arrays.asList(this.nodeA, this.nodeB)) {
+                if (p.isComputeWithParent() && p.avgEval > avgEval) {
+                    //Better parent. remove the child(s)
+                    prepareForDelete(11.11);
                 }
             }
         }
@@ -181,6 +173,7 @@ public class Node {
             if (c.nodeB == p) c.nodeB = this;
         }
         //Delete
+        childs.remove(p);
         p.childs = null; // Ignore the childs in this case
         p.prepareForDelete(33.33);
     }
@@ -234,7 +227,7 @@ public class Node {
         return n.id < NB_INPUT ? "" + STR_ABCD.charAt(n.id) : Integer.toString(n.id);
     }
 
-    private void addChild(Node node) {
+    public void addChild(Node node) {
         if (isComputeWithParent()) childs.add(node);
     }
 

@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class MainStaticService {
     public static final boolean MSG_INFO = false;
-    public static final int BACK_PROP_LOSS = 1, MAX_OP = 9;
+    public static final int MAX_OP = 9;
     public static final int MAX_ID = 500, NB_INPUT = 4;
     public static final int MAX_CYCLE = 5000, IO_MAP_NB_ENTRY = 100;
     public static final double NOISE_LIMIT = 1.0;
@@ -24,8 +24,8 @@ public class MainStaticService {
      */
     public static List<Node> run(int problemId) {
         List<Node> nodes = initNodes();
-
-        double max = 0; int count = 0;
+        int count = 0;
+        double max = 0;
         while (max < 100 && count++ < MAX_CYCLE) {
             max = DoOneCycle(nodes, IO_MAP_NB_ENTRY, NB_INPUT, count, problemId);
         }
