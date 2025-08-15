@@ -1,13 +1,22 @@
 package dev.samiyc.npsolver.bean;
 
-import dev.samiyc.npsolver.service.EvaluationStaticService;
+import static dev.samiyc.npsolver.service.EvaluationStaticService.VALUE_FOUND;
+import static dev.samiyc.npsolver.service.MainStaticService.MAX_ID;
+import static dev.samiyc.npsolver.service.MainStaticService.MAX_OP;
+import static dev.samiyc.npsolver.service.MainStaticService.MSG_INFO;
+import static dev.samiyc.npsolver.service.MainStaticService.NB_INPUT;
+import static dev.samiyc.npsolver.service.MainStaticService.random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static dev.samiyc.npsolver.service.EvaluationStaticService.VALUE_FOUND;
-import static dev.samiyc.npsolver.service.MainStaticService.*;
+import dev.samiyc.npsolver.service.EvaluationStaticService;
 
 public class Node {
     public static final String STR_ABCD = "ABCD";
@@ -51,7 +60,7 @@ public class Node {
     }
 
     private List<Integer> checkIds(List<Node> nodes, int count) {
-        //Randomly choose a unique ida, idb and operator
+        // Randomly choose a unique ida, idb and operator
         int conflict = 0, ida, idb, idRdc;
         boolean any;
         do {
@@ -59,17 +68,15 @@ public class Node {
             idRdc = id > MAX_ID / 2 ? id / 10 : idRdc;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);
-            if (ida == idb) idb++;
+            if (ida == idb)
+                idb++;
             op = random.nextInt(count % 1000 < 100 ? 3 : MAX_OP);
 
-            //Duplicate ? retry 10x
+            // Duplicate ? retry 10x
             final int fida = ida, fidb = idb;
             any = nodes.stream().anyMatch(p -> p.nodeA != null && p.nodeB != null && p.op == op &&
-                    ((p.nodeA.id == fida && p.nodeB.id == fidb) || (p.nodeA.id == fidb && p.nodeB.id == fida))
-            );
-        } while (
-                any && ++conflict < 30
-        );
+                    ((p.nodeA.id == fida && p.nodeB.id == fidb) || (p.nodeA.id == fidb && p.nodeB.id == fida)));
+        } while (any && ++conflict < 30);
         if (conflict > 29)
             throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + ida + " conflict:" + conflict);
         return Arrays.asList(ida, idb);
@@ -118,7 +125,8 @@ public class Node {
     }
 
     public static double calcAverage(List<Short> numbers) {
-        if (numbers.isEmpty()) return 0.0;
+        if (numbers.isEmpty())
+            return 0.0;
         return numbers.stream()
                 .mapToInt(Short::shortValue)
                 .average().getAsDouble();
@@ -129,7 +137,7 @@ public class Node {
             for (Node p : Arrays.asList(this.nodeA, this.nodeB)) {
                 if (p.isComputeWithParent()) {
                     if (p.avgEval < this.avgEval) {
-                        //Give credit to parents
+                        // Give credit to parents
                         p.avgEval = this.avgEval;
                         p.backProp();
                     }
@@ -142,7 +150,7 @@ public class Node {
         if (isComputeWithParent()) {
             for (Node p : Arrays.asList(this.nodeA, this.nodeB)) {
                 if (p.isComputeWithParent() && p.avgEval > avgEval) {
-                    //Better parent. remove the child(s)
+                    // Better parent. remove the child(s)
                     prepareForDelete(11.11);
                 }
             }
@@ -155,7 +163,8 @@ public class Node {
                 Node n = nodes.get(i);
                 if (n.outs != null && n.isComputeWithParent() && n.avgEval == avgEval) {
                     int j = 0;
-                    while (j < n.outs.size() && outs.get(j).equals(n.outs.get(j))) j++;
+                    while (j < n.outs.size() && outs.get(j).equals(n.outs.get(j)))
+                        j++;
                     if (j >= n.outs.size()) {
                         connectChildToGrandParentAndClean(n);
                     }
@@ -165,14 +174,16 @@ public class Node {
     }
 
     private void connectChildToGrandParentAndClean(Node p) {
-        //Connect childs to gand parent (this)
+        // Connect childs to gand parent (this)
         childs.addAll(p.childs);
-        //Update child upper links to parent
+        // Update child upper links to parent
         for (Node c : p.childs) {
-            if (c.nodeA == p) c.nodeA = this;
-            if (c.nodeB == p) c.nodeB = this;
+            if (c.nodeA == p)
+                c.nodeA = this;
+            if (c.nodeB == p)
+                c.nodeB = this;
         }
-        //Delete
+        // Delete
         childs.remove(p);
         p.childs = null; // Ignore the childs in this case
         p.prepareForDelete(33.33);
@@ -195,11 +206,12 @@ public class Node {
         nodeB = null;
         outs = null;
         evals = null;
-        if (childs != null) childs.forEach(n -> n.removeChilds(22.22));
+        if (childs != null)
+            childs.forEach(n -> n.removeChilds(22.22));
     }
 
     public void reset() {
-        //Reset outs for next simulation
+        // Reset outs for next simulation
         outs = new ArrayList<>();
         evals = new ArrayList<>();
     }
@@ -219,16 +231,19 @@ public class Node {
             outss = outs.get(outs.size() - 2) + " " + lastOut();
         }
         String strEval = avgEval == VALUE_FOUND ? ">> " + avgEval + " <<" : "" + avgEval;
-        return !MSG_INFO && isCompute() && !asParent() ? "_" : id + "[" + nodeSrcAndOp + "|" + outss + "|" + strEval + "]"; //isCompute() && !asParent() ? "_" :
+        return !MSG_INFO && isCompute() && !asParent() ? "_"
+                : id + "[" + nodeSrcAndOp + "|" + outss + "|" + strEval + "]";
     }
 
     private String toStrId(Node n) {
-        if (n == null) return "N";
+        if (n == null)
+            return "N";
         return n.id < NB_INPUT ? "" + STR_ABCD.charAt(n.id) : Integer.toString(n.id);
     }
 
     public void addChild(Node node) {
-        if (isComputeWithParent()) childs.add(node);
+        if (isComputeWithParent())
+            childs.add(node);
     }
 
     public boolean isComputeWithParent() {
@@ -236,7 +251,8 @@ public class Node {
     }
 
     public Value lastOut() {
-        if (outs.isEmpty()) return new Value();
+        if (outs.isEmpty())
+            return new Value();
         return outs.getLast();
     }
 
@@ -256,4 +272,37 @@ public class Node {
         return avgEval;
     }
 
-}//End of Node
+    public static void printLatestSolutionWithDependencies(List<Node> nodes) {
+        Optional<Node> latest = nodes.stream()
+                .filter(n -> n.getAvgEval() == 100.0)
+                .max(Comparator.comparingInt(n -> n.id));
+
+        if (latest.isEmpty()) {
+            System.out.println("No 100% node found.");
+            return;
+        } else {
+            // Collect all contributing nodes (excluding the solution itself)
+            Node sol = latest.get();
+            Set<Node> ancestors = new HashSet<>();
+            sol.collectAncestors(ancestors);
+
+            // Order by id
+            List<Node> byId = ancestors.stream()
+                    .sorted(Comparator.comparingInt(n -> n.id))
+                    .collect(Collectors.toList());
+
+            System.out.println("-- Node Tree Solution --");
+            byId.forEach(System.out::println);
+            System.out.println(sol);
+            System.out.println();
+        }
+    }
+
+    public void collectAncestors(java.util.Set<Node> acc) {
+        if (nodeA != null && acc.add(nodeA))
+            nodeA.collectAncestors(acc);
+        if (nodeB != null && acc.add(nodeB))
+            nodeB.collectAncestors(acc);
+    }
+
+}// End of Node

@@ -38,7 +38,6 @@ public class MainStaticService {
         double min;
         long cycleStartCt = System.currentTimeMillis();
 
-        if (problemId > 14) ioNbEntry = 20;
         List<InOut> map = InOut.initMap(ioNbEntry, nbInput, problemId, count);
 
         long initMapCt = System.currentTimeMillis();
