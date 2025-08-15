@@ -46,7 +46,7 @@ public class InOut {
         else if (problemId == 14) rtn = new Value(a < b ? d * d : b + c);
         else if (problemId == 15) rtn = new Value(a > b && c > d);
         else if (problemId == 16) rtn = a > b && a > c && c > d ? new Value(a) : new Value(false);
-        else if (problemId == 17) rtn = new Value(a > b && c > d ? a : b + c); //KO
+        else if (problemId == 17) rtn = new Value(a > b && c > d ? a : b + c); //KO !!!
 
         return rtn;
     }

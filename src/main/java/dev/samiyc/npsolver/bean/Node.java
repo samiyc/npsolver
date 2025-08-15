@@ -9,12 +9,7 @@ import static dev.samiyc.npsolver.service.MainStaticService.random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import dev.samiyc.npsolver.service.EvaluationStaticService;
 
@@ -270,32 +265,6 @@ public class Node {
 
     public double getAvgEval() {
         return avgEval;
-    }
-
-    public static void printLatestSolutionWithDependencies(List<Node> nodes) {
-        Optional<Node> latest = nodes.stream()
-                .filter(n -> n.getAvgEval() == 100.0)
-                .max(Comparator.comparingInt(n -> n.id));
-
-        if (latest.isEmpty()) {
-            System.out.println("No 100% node found.");
-            return;
-        } else {
-            // Collect all contributing nodes (excluding the solution itself)
-            Node sol = latest.get();
-            Set<Node> ancestors = new HashSet<>();
-            sol.collectAncestors(ancestors);
-
-            // Order by id
-            List<Node> byId = ancestors.stream()
-                    .sorted(Comparator.comparingInt(n -> n.id))
-                    .collect(Collectors.toList());
-
-            System.out.println("-- Node Tree Solution --");
-            byId.forEach(System.out::println);
-            System.out.println(sol);
-            System.out.println();
-        }
     }
 
     public void collectAncestors(java.util.Set<Node> acc) {
