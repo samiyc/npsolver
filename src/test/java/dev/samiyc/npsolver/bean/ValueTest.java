@@ -327,7 +327,6 @@ class ValueTest {
 
     @Test
     void equals_withNumber_expTrueFalse() {
-        Value out;
         Value a = new Value(23);
         Value b = new Value(-11);
         Value c = new Value(23);
@@ -340,7 +339,6 @@ class ValueTest {
 
     @Test
     void equals_withBool_expTrueFalse() {
-        Value out;
         Value a = new Value(true);
         Value b = new Value(false);
         Value c = new Value(true);
@@ -353,7 +351,6 @@ class ValueTest {
 
     @Test
     void equals_withEmpty_expOnlyFalse() {
-        Value out;
         Value a = new Value(12);
         Value b = new Value(true);
         Value c = new Value();

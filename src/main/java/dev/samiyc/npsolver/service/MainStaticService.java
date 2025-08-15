@@ -1,17 +1,17 @@
 package dev.samiyc.npsolver.service;
-
-import dev.samiyc.npsolver.bean.InOut;
-import dev.samiyc.npsolver.bean.Node;
-
+ 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import dev.samiyc.npsolver.bean.InOut;
+import dev.samiyc.npsolver.bean.Node;
 
 public class MainStaticService {
     public static final boolean MSG_INFO = false;
     public static final int MAX_OP = 9;
     public static final int MAX_ID = 500, NB_INPUT = 4;
-    public static final int MAX_CYCLE = 5000, IO_MAP_NB_ENTRY = 100;
+    public static final int MAX_CYCLE = 2000, IO_MAP_NB_ENTRY = 100;
     public static final double NOISE_LIMIT = 1.0;
     public static final Random random = new Random();
 
@@ -39,7 +39,7 @@ public class MainStaticService {
         long cycleStartCt = System.currentTimeMillis();
 
         if (problemId > 14) ioNbEntry = 20;
-        List<InOut> map = InOut.initMap(ioNbEntry, nbInput, problemId);
+        List<InOut> map = InOut.initMap(ioNbEntry, nbInput, problemId, count);
 
         long initMapCt = System.currentTimeMillis();
         for (InOut io : map) nodes.forEach(n -> n.compute(io));

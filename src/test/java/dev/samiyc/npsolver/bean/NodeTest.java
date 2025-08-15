@@ -16,7 +16,7 @@ public class NodeTest {
     @Test
     void compute_withInput_expSameOut() {
         Node n = new Node(0);
-        InOut io = new InOut(4, 10);
+        InOut io = new InOut(4, 10, 100);
         Assertions.assertEquals(4, io.in.size());
 
         for (int i = 0; i < 4; i++) {

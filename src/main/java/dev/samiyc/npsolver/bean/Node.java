@@ -55,7 +55,7 @@ public class Node {
         int conflict = 0, ida, idb, idRdc;
         boolean any;
         do {
-            idRdc = id > 20 ? 20 : id - 1;
+            idRdc = id > 20 ? 20 + conflict : id - 1;
             idRdc = id > MAX_ID / 2 ? id / 10 : idRdc;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);

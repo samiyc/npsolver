@@ -67,7 +67,7 @@ class MainStaticServiceTest {
     @Test
     void callinitMap_checkOuts() {
         int problemId = 16;
-        List<InOut> inOuts = InOut.initMap(11, 7, problemId);
+        List<InOut> inOuts = InOut.initMap(11, 7, problemId, 100);
         Assertions.assertEquals(11, inOuts.size());
         Assertions.assertEquals(7, inOuts.getFirst().in.size());
 

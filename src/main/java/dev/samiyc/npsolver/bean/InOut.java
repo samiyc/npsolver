@@ -11,10 +11,11 @@ public class InOut {
     public List<Value> in;
     public Value out;
 
-    public InOut(int nbInupt, int problemId) {
+    public InOut(int nbInupt, int problemId, int count) {
         in = new ArrayList<>();
         Random random = new Random();
-        for (int i = nbInupt; i > 0; i--) in.add(new Value(random.nextInt(100) - 50));
+        int max = 20 + count * 2;
+        for (int i = nbInupt; i > 0; i--) in.add(new Value(random.nextInt(max) - max / 2));
         out = calcOut(problemId);
     }
 
@@ -49,7 +50,7 @@ public class InOut {
         return rtn;
     }
 
-    public static List<InOut> initMap(int nbIOEntry, int nbInputs, int problemId) {
+    public static List<InOut> initMap(int nbIOEntry, int nbInputs, int problemId, int count) {
         List<InOut> map = new ArrayList<>();
 
         if (nbInputs == 4) {
@@ -69,7 +70,7 @@ public class InOut {
             }
         }
 
-        for (int j = map.size(); j < nbIOEntry; j++) map.add(new InOut(nbInputs, problemId));
+        for (int j = map.size(); j < nbIOEntry; j++) map.add(new InOut(nbInputs, problemId, count));
         if (MSG_INFO) {
             System.out.println("\n### THE MAP - nbTest:" + map.size());
             System.out.println(map);
