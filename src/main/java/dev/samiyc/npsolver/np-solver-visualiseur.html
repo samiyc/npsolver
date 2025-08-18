@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>NP Solver • Visualiseur NDJSON (drag/zoom)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg:#0b1020; --panel:#0f1630; --ink:#e7ecff; --muted:#a8b4ffaa;
+    --edge:#9ab1ff; --edge-hi:#ffd166; --node:#0f1a44; --border:#243081; --input:#0d223f; --shadow:#0007;
+  }
+  html,body{height:100%; margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,Segoe UI,Roboto,Arial}
+  header{padding:10px 16px; background:#0d1535; border-bottom:1px solid #1c2550; font-weight:700}
+  .app{display:grid; grid-template-columns:360px 1fr; gap:12px; height:calc(100% - 42px)}
+  .left{padding:10px; background:var(--panel); overflow:auto}
+  textarea{width:100%; height:320px; resize:vertical; background:#0a1230; color:var(--ink); border:1px solid #1b2350; border-radius:10px; padding:10px; font-family:ui-monospace,Menlo,Consolas,monospace}
+  .row{display:flex; gap:8px; margin-top:8px}
+  button{background:#112266; border:1px solid #17308f; color:#fff; border-radius:10px; padding:8px 12px; cursor:pointer}
+  .mini{font-size:12px; color:var(--muted); margin-top:6px}
+  .right{position:relative; overflow:hidden}
+  #viewport{position:absolute; inset:0; overflow:hidden; background:radial-gradient(1200px 500px at 20% -10%,#151e46,#0b1020)}
+  #stage{position:absolute; left:0; top:0; will-change:transform; cursor:grab}
+  #stage.drag{cursor:grabbing}
+  #wires{position:absolute; left:0; top:0; will-change:transform; pointer-events:none}
+  .node{position:absolute; min-width:160px; max-width:280px; background:var(--node); border:1px solid var(--border); border-radius:14px; padding:8px 10px; transform:translate(-50%,-50%); box-shadow:0 10px 24px var(--shadow); user-select:none}
+  .node.input{background:var(--input)}
+  .node.sel{border-color:var(--edge-hi); box-shadow:0 0 0 2px rgba(255,209,102,.25), 0 10px 24px var(--shadow)}
+  .node.neigh{border-color:#7fb0ff}
+  .title{font-size:12px; font-weight:700}
+  .sub{font-size:11px; color:var(--muted); margin-top:2px}
+  .vals{white-space:pre-line; font-size:11px; color:#cdd6ff; margin-top:6px}
+
+  /* Lignes: sans ombre, arrondies, semi-transparentes */
+  .edge{fill:none; stroke:var(--edge); stroke-opacity:.45; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+  .edge.sel{stroke:var(--edge-hi); stroke-opacity:1; stroke-width:3}
+</style>
+</head>
+<body>
+  <header>NP Solver • Visualiseur NDJSON (drag/zoom)</header>
+  <div class="app">
+    <section class="left">
+      <textarea id="input" placeholder='Collez ici votre NDJSON (1ère ligne = meta)'></textarea>
+      <div class="row">
+        <button id="build">Générer le graphe</button>
+        <button id="example">Exemple</button>
+      </div>
+      <div class="mini">
+        • Drag fond = déplacer, molette = zoom<br>
+        • Drag & drop des nœuds = réorganiser (les liens suivent)<br>
+        • Clic nœud = met en surbrillance ses liens; clic fond = reset
+      </div>
+    </section>
+    <section class="right">
+      <div id="viewport">
+        <svg id="wires" width="8000" height="6000"></svg>
+        <div id="stage"></div>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function(){
+  const txt = document.getElementById('input');
+  const buildBtn = document.getElementById('build');
+  const exampleBtn = document.getElementById('example');
+  const stage = document.getElementById('stage');
+  const wires = document.getElementById('wires');
+  const viewport = document.getElementById('viewport');
+
+  // --- State ---
+  let graph = null;           // {header, nodes, byId}
+  let pos = new Map();        // id -> {x,y}
+  let nodeEls = new Map();    // id -> HTMLElement
+  let edges = [];             // {from,to,path}
+  let edgesByNode = new Map();// id -> edge refs
+  let selectedId = null;
+
+  // --- Pan & Zoom ---
+  let isPanning=false, sx=0, sy=0, ox=120, oy=100, sc=1;
+  function applyTransform(){ 
+    const t = `translate(${ox}px,${oy}px) scale(${sc})`;
+    stage.style.transform = t; wires.style.transform = t;
+  }
+  function screenToWorld(px, py){
+    const rect = viewport.getBoundingClientRect();
+    const x = (px - rect.left - ox)/sc;
+    const y = (py - rect.top  - oy)/sc;
+    return {x,y};
+  }
+  viewport.addEventListener('mousedown', e=>{
+    // ignore if grabbing a node (handled on node)
+    if(e.target.closest('.node')) return;
+    isPanning = true; stage.classList.add('drag');
+    sx = e.clientX - ox; sy = e.clientY - oy;
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!isPanning) return;
+    ox = e.clientX - sx; oy = e.clientY - sy;
+    applyTransform();
+  });
+  window.addEventListener('mouseup', ()=>{ isPanning=false; stage.classList.remove('drag'); });
+  viewport.addEventListener('wheel', e=>{
+    // Zoom autour du curseur
+    e.preventDefault();
+    const factor = (e.deltaY>0) ? 0.9 : 1.1;
+    const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+    const before = screenToWorld(e.clientX, e.clientY);
+    sc = clamp(sc*factor, 0.3, 3);
+    const after = screenToWorld(e.clientX, e.clientY);
+    // ajuster l’offset pour garder l’ancre sous le curseur
+    ox += (after.x - before.x)*sc;
+    oy += (after.y - before.y)*sc;
+    applyTransform();
+  }, {passive:false});
+  // Reset sélection en cliquant le fond
+  viewport.addEventListener('click', e=>{
+    if(!e.target.closest('.node')) setSelected(null);
+  });
+
+  // --- Parse NDJSON ---
+  function parseNdjson(text){
+    const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    if(!lines.length) throw new Error('NDJSON vide');
+    const header = JSON.parse(lines[0]);
+    const nodes = lines.slice(1).map(JSON.parse);
+    const byId = new Map(nodes.map(n=>[n.id,n]));
+    return {header, nodes, byId};
+  }
+
+  // --- Helpers ---
+  function clear(){
+    stage.innerHTML=''; nodeEls.clear();
+    while(wires.firstChild) wires.removeChild(wires.firstChild);
+    edges.length = 0; edgesByNode.clear();
+    selectedId = null;
+  }
+  function joinOut(o){ return Array.isArray(o) ? o.join(', ') : String(o); }
+  function escapeHtml(s){ return String(s).replace(/[&<>\"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  function letterFromId(header, id){
+    if(!header?.inputs) return null;
+    for(const [L, v] of Object.entries(header.inputs)) if(v === id) return L;
+    return null;
+  }
+  function makeExpr(n, header){
+    if(n.kind!=='op') return null;
+    const L = letterFromId(header, n.parents?.[0]) ?? n.parents?.[0];
+    const R = letterFromId(header, n.parents?.[1]) ?? n.parents?.[1];
+    return (L!=null && R!=null && n.op) ? `${L} ${n.op} ${R}` : null;
+  }
+
+  // --- Layout: inputs top, others 4 cols ---
+  function initialLayout(header, nodes){
+    const p = new Map();
+    const colW = 260, rowH = 140;
+    const topY = 80, gridY0 = 260;
+    const inputsMap = header?.inputs || {A:0,B:1,C:2,D:3};
+    const inputOrder = Object.keys(inputsMap).sort((a,b)=>inputsMap[a]-inputsMap[b]);
+    inputOrder.forEach((letter,i)=>{
+      const id = inputsMap[letter];
+      p.set(id, {x: 150 + i*colW, y: topY});
+    });
+    const others = nodes.filter(n => !inputOrder.some(L => inputsMap[L] === n.id))
+                        .sort((a,b)=>a.id-b.id);
+    others.forEach((n,i)=>{
+      const x = 150 + (i % 4) * colW;
+      const y = gridY0 + Math.floor(i/4)*rowH;
+      p.set(n.id,{x,y});
+    });
+    return p;
+  }
+
+  // --- Edges building / updating ---
+  function edgePathD(fromId, toId){
+    const a = pos.get(fromId), b = pos.get(toId);
+    const mx = (a.x + b.x)/2;
+    return `M ${a.x} ${a.y} C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x-70} ${b.y}`;
+  }
+  function addEdge(fromId, toId){
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('class','edge');
+    path.dataset.from = fromId;
+    path.dataset.to = toId;
+    path.setAttribute('d', edgePathD(fromId, toId));
+    wires.appendChild(path);
+    const ref = {from: fromId, to: toId, path};
+    edges.push(ref);
+    (edgesByNode.get(fromId) || edgesByNode.set(fromId, []).get(fromId)).push(ref);
+    (edgesByNode.get(toId)   || edgesByNode.set(toId,   []).get(toId)).push(ref);
+  }
+  function updateEdgesFor(id){
+    const list = edgesByNode.get(id) || [];
+    for(const e of list){
+      e.path.setAttribute('d', edgePathD(e.from, e.to));
+    }
+  }
+  function applySelection(){
+    // reset
+    document.querySelectorAll('.edge').forEach(p=>p.classList.remove('sel'));
+    document.querySelectorAll('.node').forEach(n=>{ n.classList.remove('sel','neigh'); });
+    if(selectedId==null) return;
+    const el = nodeEls.get(selectedId);
+    if(el) el.classList.add('sel');
+    const list = edgesByNode.get(selectedId) || [];
+    for(const e of list){
+      e.path.classList.add('sel');
+      const other = (e.from===selectedId) ? e.to : e.from;
+      const on = nodeEls.get(other); if(on) on.classList.add('neigh');
+    }
+  }
+  function setSelected(id){ selectedId = id; applySelection(); }
+
+  // --- Node drag & drop ---
+  function makeDraggable(box, id){
+    let dragging=false, dx=0, dy=0, moved=false;
+
+    const onDown = (e)=>{
+      e.stopPropagation(); // bloque le pan
+      dragging=true; moved=false;
+      // point monde
+      const w = screenToWorld(e.clientX, e.clientY);
+      dx = pos.get(id).x - w.x;
+      dy = pos.get(id).y - w.y;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp, {once:true});
+    };
+    const onMove = (e)=>{
+      if(!dragging) return;
+      moved=true;
+      const w = screenToWorld(e.clientX, e.clientY);
+      const nx = w.x + dx, ny = w.y + dy;
+      pos.set(id,{x:nx,y:ny});
+      box.style.left = nx+'px'; box.style.top = ny+'px';
+      updateEdgesFor(id);
+    };
+    const onUp = (e)=>{
+      document.removeEventListener('mousemove', onMove);
+      dragging=false;
+      // si peu de mouvement -> click = sélection
+      if(!moved) setSelected(id);
+      else applySelection(); // garde sélection si déjà sur ce nœud
+    };
+    box.addEventListener('mousedown', onDown);
+  }
+
+  // --- Render graph ---
+  function render(nd){
+    clear();
+    graph = nd;
+    pos = initialLayout(nd.header, nd.nodes);
+
+    // Draw edges first
+    for(const n of nd.nodes){
+      if(n.kind!=='op' || !Array.isArray(n.parents)) continue;
+      for(const pid of n.parents) addEdge(pid, n.id);
+    }
+
+    // Draw nodes
+    for(const n of nd.nodes){
+      const p = pos.get(n.id); if(!p) continue;
+      const box = document.createElement('div');
+      const isInput = n.kind === 'input';
+      box.className = 'node' + (isInput ? ' input' : '');
+      box.style.left = p.x+'px'; box.style.top = p.y+'px';
+      box.id = `node-${n.id}`;
+      box.dataset.id = n.id;
+
+      const title = isInput
+        ? `Input ${n.name ?? letterFromId(nd.header, n.id)}`
+        : `${n.id} [${n.label ?? n.raw ?? (makeExpr(n, nd.header) || n.op || 'op')}]`;
+      const outputs = `Output: ${joinOut(n.outputs)}`;
+
+      let parentsBlock = '';
+      if(n.kind === 'op' && Array.isArray(n.parents) && n.parents.length){
+        parentsBlock = 'Parents:\n' + n.parents.map(pid=>{
+          const pn = nd.byId.get(pid);
+          const tag = (letterFromId(nd.header, pid) ?? pid) + ` (${pid})`;
+          const pout = pn?.outputs ? joinOut(pn.outputs) : '—';
+          return `  ${tag}: ${pout}`;
+        }).join('\n');
+      }
+
+      box.innerHTML = `
+        <div class="title">${escapeHtml(title)}</div>
+        ${!isInput && (n.label || n.raw || n.op) ? `<div class="sub">${escapeHtml(n.label ?? n.raw ?? n.op)}</div>` : ''}
+        <div class="vals">${escapeHtml(outputs)}${parentsBlock? '\n'+escapeHtml(parentsBlock): ''}</div>
+      `;
+      stage.appendChild(box);
+      nodeEls.set(n.id, box);
+      makeDraggable(box, n.id);
+      // simple click (sans drag) => sélection
+      box.addEventListener('click', (e)=>{ e.stopPropagation(); setSelected(n.id); });
+    }
+  }
+
+  // --- Build from textarea ---
+  function build(){
+    const nd = parseNdjson(txt.value);
+    render(nd);
+  }
+
+  // --- Example ---
+  function fillExample(){
+    txt.value =
+`{"sch":"np-solver/1.0","inputs":{"A":0,"B":1,"C":2,"D":3},"operators":"+-x>:hl#a","boolOp":"b","solution":499,"generatedAt":"2025-08-18T20:39:35"}
+{"id":0,"kind":"input","name":"A","outputs":["-74","65"]}
+{"id":1,"kind":"input","name":"B","outputs":["101","151"]}
+{"id":2,"kind":"input","name":"C","outputs":["168","-123"]}
+{"id":3,"kind":"input","name":"D","outputs":["-62","217"]}
+{"id":4,"kind":"op","op":"#","onlyA":true,"label":"# C","parents":[2,1],"outputs":["12","0"]}
+{"id":5,"kind":"op","op":"a","onlyA":true,"label":"a D","parents":[3,4],"outputs":["62","217"]}
+{"id":7,"kind":"op","op":">","onlyA":false,"label":"5 > A","parents":[5,0],"outputs":["true","true"]}
+{"id":9,"kind":"op","op":"b","onlyA":false,"label":"7 b 4","parents":[7,4],"outputs":["N","N"]}
+{"id":10,"kind":"op","op":">","onlyA":false,"label":"9 > D","parents":[9,3],"outputs":["N","N"]}
+{"id":11,"kind":"op","op":">","onlyA":false,"label":"C > A","parents":[2,0],"outputs":["true","false"]}
+{"id":14,"kind":"op","op":"h","onlyA":false,"label":"A h 10","parents":[0,10],"outputs":["N","N"]}
+{"id":20,"kind":"op","op":"b","onlyA":false,"label":"14 b 11","parents":[14,11],"outputs":["N","N"]}
+{"id":22,"kind":"op","op":">","onlyA":false,"label":"A > B","parents":[0,1],"outputs":["false","false"]}
+{"id":23,"kind":"op","op":">","onlyA":false,"label":"C > D","parents":[2,3],"outputs":["true","false"]}
+{"id":27,"kind":"op","op":"b","onlyA":false,"label":"23 b 20","parents":[23,20],"outputs":["N","N"]}
+{"id":29,"kind":"op","op":"b","onlyA":false,"label":"22 b 27","parents":[22,27],"outputs":["N","N"]}
+{"id":32,"kind":"op","op":"b","onlyA":false,"label":"29 b 22","parents":[29,22],"outputs":["N","N"]}
+{"id":48,"kind":"op","op":"b","onlyA":false,"label":"22 b 32","parents":[22,32],"outputs":["N","N"]}
+{"id":499,"kind":"op","op":":","onlyA":false,"label":"48 : 32","parents":[48,32],"outputs":["N","N"]}`;
+  }
+
+  buildBtn.addEventListener('click', build);
+  exampleBtn.addEventListener('click', ()=>{ fillExample(); build(); });
+
+  // Optionnel: précharger l'exemple
+  // fillExample(); build();
+  applyTransform(); // init
+})();
+</script>
+</body>
+</html>

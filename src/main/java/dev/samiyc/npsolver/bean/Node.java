@@ -9,13 +9,17 @@ import static dev.samiyc.npsolver.service.MainStaticService.random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.samiyc.npsolver.service.EvaluationStaticService;
 
 public class Node {
     public static final String STR_ABCD = "ABCD";
-    public static final String STR_OPERATOR = "+-x>:h#la ";
+    public static final String STR_OPERATOR = "+-x>:hl#a ";
     public Node nodeA, nodeB;
     public int id, op;
     public double avgEval = 0.0;
@@ -87,14 +91,14 @@ public class Node {
             } else if (b.isBool() && a.isInt()) {
                 outs.add(boolIntInteraction(b, a));
             } else {
-                if (op == 0) outs.add(a.add(b));
+                if (op == 0)      outs.add(a.add(b));
                 else if (op == 1) outs.add(a.minus(b));
                 else if (op == 2) outs.add(a.mult(b));
                 else if (op == 3) outs.add(a.sup(b));
                 else if (op == 4) outs.add(a.alternative(b));
                 else if (op == 5) outs.add(a.hypot(b));
-                else if (op == 6) outs.add(a.sqrt());
-                else if (op == 7) outs.add(a.min(b));
+                else if (op == 6) outs.add(a.min(b));
+                else if (op == 7) outs.add(a.sqrt());
                 else if (op == 8) outs.add(a.abs());
             }
         }
@@ -230,7 +234,7 @@ public class Node {
                 : id + "[" + nodeSrcAndOp + "|" + outss + "|" + strEval + "]";
     }
 
-    private String toStrId(Node n) {
+    public static String toStrId(Node n) {
         if (n == null)
             return "N";
         return n.id < NB_INPUT ? "" + STR_ABCD.charAt(n.id) : Integer.toString(n.id);
@@ -272,6 +276,61 @@ public class Node {
             nodeA.collectAncestors(acc);
         if (nodeB != null && acc.add(nodeB))
             nodeB.collectAncestors(acc);
+    }
+
+    public String toJsonString() {
+        try {
+            ObjectMapper om = new ObjectMapper();
+            return om.writeValueAsString(toJsonDto());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Map<String, Object> toJsonDto() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", this.id);
+        m.put("kind", isInput() ? "input" : "op");
+
+        // name pour inputs A/B/C/D si utile
+        if (isInput()) {
+            // adapte si tu as déjà un champ name; sinon calcule-le
+            m.put("name", toStrId(this));
+        } else {
+            // expr lisible (ex: "B a A") ou raw (ex: "BaA") – ajuste selon tes champs
+            char chOp = nodeA.lastOut().isBool() || nodeB.lastOut().isBool() ? 'b' : STR_OPERATOR.charAt(op);
+            m.put("op", chOp);
+            Boolean onlyA = "#a".contains("" + chOp);
+            m.put("onlyA", onlyA);
+            if (onlyA) {
+                m.put("label", chOp + " " + Node.toStrId(nodeA));
+            } else {
+                m.put("label", Node.toStrId(nodeA) + " " + chOp + " " + Node.toStrId(nodeB));
+            }
+
+            // parents → IDs seulement (évite les cycles)
+            List<Integer> parents = new ArrayList<>();
+            if (this.nodeA != null)
+                parents.add(this.nodeA.id);
+            if (this.nodeB != null)
+                parents.add(this.nodeB.id);
+            // si tu as plus de 2 sources, ajoute-les ici
+            m.put("parents", parents);
+        }
+
+        // outputs → les 2 dernières valeurs en CHAÎNES
+        m.put("outputs", getLastTwoOutputsAsStrings());
+
+        return m;
+    }
+
+    private List<String> getLastTwoOutputsAsStrings() {
+        if (this.outs == null || this.outs.isEmpty())
+            return List.of();
+        int n = this.outs.size();
+        // convertis en String (true/N/num → toString)
+        return List.of(this.outs.get(Math.max(0, n - 2)).toString(),
+                this.outs.get(n - 1).toString());
     }
 
 }// End of Node
