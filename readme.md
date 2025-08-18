@@ -9,6 +9,16 @@ The algorithm uses a **forward-propagation** approach to generate candidate node
 ✅ **No issues** found in VSCode problem tab.
 
 
+## 🔨 Build project with wsl/sdkman
+how to build the project
+
+```unix
+wsl
+sdk install java 21.0.8-oracle (only once)
+sdk use java 21.0.8-oracle
+mvn clean install
+```
+
 ## 🚀 Quick Start
 
 To run a problem and print the **latest 100% match node** with all its contributing ancestors:

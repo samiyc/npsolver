@@ -1,25 +1,20 @@
 package dev.samiyc.npsolver.service;
 
-import dev.samiyc.npsolver.bean.InOut;
-import dev.samiyc.npsolver.bean.Node;
-import dev.samiyc.npsolver.bean.NodeTest;
-import dev.samiyc.npsolver.bean.Value;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import static dev.samiyc.npsolver.service.MainStaticService.*;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static dev.samiyc.npsolver.service.MainStaticService.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import dev.samiyc.npsolver.bean.InOut;
+import dev.samiyc.npsolver.bean.Node;
+import dev.samiyc.npsolver.bean.NodeTest;
+import dev.samiyc.npsolver.bean.Value;
 
 class MainStaticServiceTest {
-
-    public static final boolean INTEGRATION = true;
-
-    boolean isIntegration() {
-        return INTEGRATION;
-    }
 
     @Test
     void doOneCycle() {
@@ -74,7 +69,7 @@ class MainStaticServiceTest {
         for (InOut io : inOuts) {
             Assertions.assertEquals(io.calcOut(problemId), io.out);
         }
-        //Quickly check InOut toString()
+        // Quickly check InOut toString()
         Assertions.assertTrue(inOuts.getFirst().toString().matches(".* => .*"));
     }
 
@@ -117,96 +112,83 @@ class MainStaticServiceTest {
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_1() {
         run_withProblemId(1);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_2() {
         run_withProblemId(2);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_3() {
         run_withProblemId(3);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_4() {
         run_withProblemId(4);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_5() {
         run_withProblemId(5);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_6() {
         run_withProblemId(6);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_7() {
         run_withProblemId(7);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_8() {
         run_withProblemId(8);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_9() {
         run_withProblemId(9);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_10() {
         run_withProblemId(10);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_11() {
         run_withProblemId(11);
     }
 
     @Test
-    @EnabledIf("isIntegration")
+    @Tag("flaky") // Unstable test
     void run_withProblemId_12() {
         run_withProblemId(12);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_13() {
         run_withProblemId(13);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_14() {
         run_withProblemId(14);
     }
 
     @Test
-    @EnabledIf("isIntegration")
     void run_withProblemId_15() {
         run_withProblemId(15);
     }
+
     @Test
-    @EnabledIf("isIntegration")
+    @Tag("flaky") // Unstable test
     void run_withProblemId_16() {
         run_withProblemId(16);
     }
