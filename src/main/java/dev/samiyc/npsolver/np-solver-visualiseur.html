@@ -19,9 +19,9 @@
   .mini{font-size:12px; color:var(--muted); margin-top:6px}
   .right{position:relative; overflow:hidden}
   #viewport{position:absolute; inset:0; overflow:hidden; background:radial-gradient(1200px 500px at 20% -10%,#151e46,#0b1020)}
-  #stage{position:absolute; left:0; top:0; will-change:transform; cursor:grab}
+  #stage{position:absolute; left:0; top:0; will-change:transform; cursor:grab; transform-origin:0 0}
   #stage.drag{cursor:grabbing}
-  #wires{position:absolute; left:0; top:0; will-change:transform; pointer-events:none}
+  #wires{position:absolute; left:0; top:0; will-change:transform; pointer-events:none; transform-origin:0 0}
   .node{position:absolute; min-width:160px; max-width:280px; background:var(--node); border:1px solid var(--border); border-radius:14px; padding:8px 10px; transform:translate(-50%,-50%); box-shadow:0 10px 24px var(--shadow); user-select:none}
   .node.input{background:var(--input)}
   .node.sel{border-color:var(--edge-hi); box-shadow:0 0 0 2px rgba(255,209,102,.25), 0 10px 24px var(--shadow)}
@@ -29,8 +29,7 @@
   .title{font-size:12px; font-weight:700}
   .sub{font-size:11px; color:var(--muted); margin-top:2px}
   .vals{white-space:pre-line; font-size:11px; color:#cdd6ff; margin-top:6px}
-
-  /* Lignes: sans ombre, arrondies, semi-transparentes */
+  /* Lignes sans ombre */
   .edge{fill:none; stroke:var(--edge); stroke-opacity:.45; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
   .edge.sel{stroke:var(--edge-hi); stroke-opacity:1; stroke-width:3}
 </style>
@@ -39,15 +38,15 @@
   <header>NP Solver • Visualiseur NDJSON (drag/zoom)</header>
   <div class="app">
     <section class="left">
-      <textarea id="input" placeholder='Collez ici votre NDJSON (1ère ligne = meta)'></textarea>
+      <textarea id="input" placeholder="Collez ici votre NDJSON (1ère ligne = meta)"></textarea>
       <div class="row">
         <button id="build">Générer le graphe</button>
         <button id="example">Exemple</button>
       </div>
       <div class="mini">
-        • Drag fond = déplacer, molette = zoom<br>
+        • Drag fond = déplacer, molette = zoom (fixé sous le curseur)<br>
         • Drag & drop des nœuds = réorganiser (les liens suivent)<br>
-        • Clic nœud = met en surbrillance ses liens; clic fond = reset
+        • Clic nœud = surbrillance des liens; clic fond = reset
       </div>
     </section>
     <section class="right">
@@ -75,43 +74,50 @@
   let edgesByNode = new Map();// id -> edge refs
   let selectedId = null;
 
-  // --- Pan & Zoom ---
+  // --- Pan & Zoom (transform-origin: 0 0) ---
   let isPanning=false, sx=0, sy=0, ox=120, oy=100, sc=1;
-  function applyTransform(){ 
+  function applyTransform(){
     const t = `translate(${ox}px,${oy}px) scale(${sc})`;
-    stage.style.transform = t; wires.style.transform = t;
+    stage.style.transform = t;
+    wires.style.transform = t;
   }
-  function screenToWorld(px, py){
-    const rect = viewport.getBoundingClientRect();
-    const x = (px - rect.left - ox)/sc;
-    const y = (py - rect.top  - oy)/sc;
-    return {x,y};
+  function worldAtPointer(clientX, clientY){
+    const r = viewport.getBoundingClientRect();
+    return {
+      x: (clientX - r.left - ox) / sc,
+      y: (clientY - r.top  - oy) / sc
+    };
   }
   viewport.addEventListener('mousedown', e=>{
-    // ignore if grabbing a node (handled on node)
-    if(e.target.closest('.node')) return;
+    if(e.target.closest('.node')) return; // pan uniquement sur fond
     isPanning = true; stage.classList.add('drag');
-    sx = e.clientX - ox; sy = e.clientY - oy;
+    const r = viewport.getBoundingClientRect();
+    sx = e.clientX - r.left - ox;
+    sy = e.clientY - r.top  - oy;
   });
   window.addEventListener('mousemove', e=>{
     if(!isPanning) return;
-    ox = e.clientX - sx; oy = e.clientY - sy;
+    const r = viewport.getBoundingClientRect();
+    ox = e.clientX - r.left - sx;
+    oy = e.clientY - r.top  - sy;
     applyTransform();
   });
   window.addEventListener('mouseup', ()=>{ isPanning=false; stage.classList.remove('drag'); });
+
   viewport.addEventListener('wheel', e=>{
-    // Zoom autour du curseur
     e.preventDefault();
+    const r = viewport.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    const wx = (px - ox) / sc;
+    const wy = (py - oy) / sc;
     const factor = (e.deltaY>0) ? 0.9 : 1.1;
-    const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
-    const before = screenToWorld(e.clientX, e.clientY);
-    sc = clamp(sc*factor, 0.3, 3);
-    const after = screenToWorld(e.clientX, e.clientY);
-    // ajuster l’offset pour garder l’ancre sous le curseur
-    ox += (after.x - before.x)*sc;
-    oy += (after.y - before.y)*sc;
+    sc = Math.max(0.3, Math.min(3, sc * factor));
+    // garder (wx,wy) sous le curseur après zoom
+    ox = px - wx * sc;
+    oy = py - wy * sc;
     applyTransform();
   }, {passive:false});
+
   // Reset sélection en cliquant le fond
   viewport.addEventListener('click', e=>{
     if(!e.target.closest('.node')) setSelected(null);
@@ -184,8 +190,10 @@
     wires.appendChild(path);
     const ref = {from: fromId, to: toId, path};
     edges.push(ref);
-    (edgesByNode.get(fromId) || edgesByNode.set(fromId, []).get(fromId)).push(ref);
-    (edgesByNode.get(toId)   || edgesByNode.set(toId,   []).get(toId)).push(ref);
+    if(!edgesByNode.has(fromId)) edgesByNode.set(fromId, []);
+    if(!edgesByNode.has(toId))   edgesByNode.set(toId,   []);
+    edgesByNode.get(fromId).push(ref);
+    edgesByNode.get(toId).push(ref);
   }
   function updateEdgesFor(id){
     const list = edgesByNode.get(id) || [];
@@ -194,7 +202,6 @@
     }
   }
   function applySelection(){
-    // reset
     document.querySelectorAll('.edge').forEach(p=>p.classList.remove('sel'));
     document.querySelectorAll('.node').forEach(n=>{ n.classList.remove('sel','neigh'); });
     if(selectedId==null) return;
@@ -211,35 +218,35 @@
 
   // --- Node drag & drop ---
   function makeDraggable(box, id){
-    let dragging=false, dx=0, dy=0, moved=false;
-
-    const onDown = (e)=>{
-      e.stopPropagation(); // bloque le pan
+    let dragging=false, moved=false, dx=0, dy=0;
+    box.addEventListener('mousedown', (e)=>{
+      e.stopPropagation();
       dragging=true; moved=false;
-      // point monde
-      const w = screenToWorld(e.clientX, e.clientY);
-      dx = pos.get(id).x - w.x;
-      dy = pos.get(id).y - w.y;
+      const r = viewport.getBoundingClientRect();
+      const px = e.clientX - r.left, py = e.clientY - r.top;
+      const wx = (px - ox) / sc, wy = (py - oy) / sc;
+      dx = pos.get(id).x - wx; dy = pos.get(id).y - wy;
+      const onMove = (ev)=>{
+        if(!dragging) return;
+        const rx = ev.clientX - r.left, ry = ev.clientY - r.top;
+        const wx2 = (rx - ox) / sc, wy2 = (ry - oy) / sc;
+        const nx = wx2 + dx, ny = wy2 + dy;
+        pos.set(id,{x:nx,y:ny});
+        box.style.left = nx+'px'; box.style.top = ny+'px';
+        updateEdgesFor(id);
+        moved = true;
+      };
+      const onUp = ()=>{
+        dragging=false;
+        document.removeEventListener('mousemove', onMove);
+        if(!moved) setSelected(id);
+        else applySelection();
+      };
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp, {once:true});
-    };
-    const onMove = (e)=>{
-      if(!dragging) return;
-      moved=true;
-      const w = screenToWorld(e.clientX, e.clientY);
-      const nx = w.x + dx, ny = w.y + dy;
-      pos.set(id,{x:nx,y:ny});
-      box.style.left = nx+'px'; box.style.top = ny+'px';
-      updateEdgesFor(id);
-    };
-    const onUp = (e)=>{
-      document.removeEventListener('mousemove', onMove);
-      dragging=false;
-      // si peu de mouvement -> click = sélection
-      if(!moved) setSelected(id);
-      else applySelection(); // garde sélection si déjà sur ce nœud
-    };
-    box.addEventListener('mousedown', onDown);
+    });
+    // simple click -> select
+    box.addEventListener('click', (e)=>{ e.stopPropagation(); setSelected(id); });
   }
 
   // --- Render graph ---
@@ -248,13 +255,13 @@
     graph = nd;
     pos = initialLayout(nd.header, nd.nodes);
 
-    // Draw edges first
+    // Edges
     for(const n of nd.nodes){
       if(n.kind!=='op' || !Array.isArray(n.parents)) continue;
       for(const pid of n.parents) addEdge(pid, n.id);
     }
 
-    // Draw nodes
+    // Nodes
     for(const n of nd.nodes){
       const p = pos.get(n.id); if(!p) continue;
       const box = document.createElement('div');
@@ -287,8 +294,6 @@
       stage.appendChild(box);
       nodeEls.set(n.id, box);
       makeDraggable(box, n.id);
-      // simple click (sans drag) => sélection
-      box.addEventListener('click', (e)=>{ e.stopPropagation(); setSelected(n.id); });
     }
   }
 
@@ -296,6 +301,7 @@
   function build(){
     const nd = parseNdjson(txt.value);
     render(nd);
+    applyTransform(); // assure la synchro après build
   }
 
   // --- Example ---
@@ -326,9 +332,8 @@
   buildBtn.addEventListener('click', build);
   exampleBtn.addEventListener('click', ()=>{ fillExample(); build(); });
 
-  // Optionnel: précharger l'exemple
-  // fillExample(); build();
   applyTransform(); // init
+
 })();
 </script>
 </body>

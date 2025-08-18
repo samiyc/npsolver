@@ -312,25 +312,28 @@ public class Node {
             List<Integer> parents = new ArrayList<>();
             if (this.nodeA != null)
                 parents.add(this.nodeA.id);
-            if (this.nodeB != null)
+            if (this.nodeB != null && !onlyA)
                 parents.add(this.nodeB.id);
             // si tu as plus de 2 sources, ajoute-les ici
             m.put("parents", parents);
         }
 
         // outputs → les 2 dernières valeurs en CHAÎNES
-        m.put("outputs", getLastTwoOutputsAsStrings());
+        m.put("outputs", getLastXoutputsAsStrings(5));
 
         return m;
     }
 
-    private List<String> getLastTwoOutputsAsStrings() {
+    private List<String> getLastXoutputsAsStrings(int x) {
         if (this.outs == null || this.outs.isEmpty())
             return List.of();
         int n = this.outs.size();
-        // convertis en String (true/N/num → toString)
-        return List.of(this.outs.get(Math.max(0, n - 2)).toString(),
-                this.outs.get(n - 1).toString());
+
+        List<String> out = new ArrayList<>();
+        for (int i = n-x; i < n; i++) {
+            out.add(this.outs.get(Math.max(0, i)).toString());
+        }
+        return out;
     }
 
 }// End of Node
