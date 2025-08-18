@@ -8,6 +8,7 @@
   :root{
     --bg:#0b1020; --panel:#0f1630; --ink:#e7ecff; --muted:#a8b4ffaa;
     --edge:#9ab1ff; --edge-hi:#ffd166; --node:#0f1a44; --border:#243081; --input:#0d223f; --shadow:#0007;
+    --bad-border:#ff4d5f; --bad-bg:#2a0f16; /* pour matchParent = true */
   }
   html,body{height:100%; margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,Segoe UI,Roboto,Arial}
   header{padding:10px 16px; background:#0d1535; border-bottom:1px solid #1c2550; font-weight:700}
@@ -26,6 +27,9 @@
   .node.input{background:var(--input)}
   .node.sel{border-color:var(--edge-hi); box-shadow:0 0 0 2px rgba(255,209,102,.25), 0 10px 24px var(--shadow)}
   .node.neigh{border-color:#7fb0ff}
+  /* Node rouge si matchParent == true */
+  .node.redundant{border-color:var(--bad-border); background:var(--bad-bg);}
+  .node.redundant.sel{box-shadow:0 0 0 2px rgba(255,77,95,.35), 0 10px 24px var(--shadow)}
   .title{font-size:12px; font-weight:700}
   .sub{font-size:11px; color:var(--muted); margin-top:2px}
   .vals{white-space:pre-line; font-size:11px; color:#cdd6ff; margin-top:6px}
@@ -46,7 +50,8 @@
       <div class="mini">
         • Drag fond = déplacer, molette = zoom (fixé sous le curseur)<br>
         • Drag & drop des nœuds = réorganiser (les liens suivent)<br>
-        • Clic nœud = surbrillance des liens; clic fond = reset
+        • Clic nœud = surbrillance des liens; clic fond = reset<br>
+        • Nœud <span style="color:#ff6b7a">rouge</span> = <i>matchParent</i> (sorties identiques à un parent)
       </div>
     </section>
     <section class="right">
@@ -80,13 +85,6 @@
     const t = `translate(${ox}px,${oy}px) scale(${sc})`;
     stage.style.transform = t;
     wires.style.transform = t;
-  }
-  function worldAtPointer(clientX, clientY){
-    const r = viewport.getBoundingClientRect();
-    return {
-      x: (clientX - r.left - ox) / sc,
-      y: (clientY - r.top  - oy) / sc
-    };
   }
   viewport.addEventListener('mousedown', e=>{
     if(e.target.closest('.node')) return; // pan uniquement sur fond
@@ -157,8 +155,8 @@
   // --- Layout: inputs top, others 4 cols ---
   function initialLayout(header, nodes){
     const p = new Map();
-    const colW = 260, rowH = 140;
-    const topY = 80, gridY0 = 260;
+    const colW = 360, rowH = 400;
+    const topY = 80, gridY0 = 460;
     const inputsMap = header?.inputs || {A:0,B:1,C:2,D:3};
     const inputOrder = Object.keys(inputsMap).sort((a,b)=>inputsMap[a]-inputsMap[b]);
     inputOrder.forEach((letter,i)=>{
@@ -267,6 +265,11 @@
       const box = document.createElement('div');
       const isInput = n.kind === 'input';
       box.className = 'node' + (isInput ? ' input' : '');
+      // >>> NEW: couleur rouge si matchParent === true
+      if(n.matchParent === true || n.matchParent === "true") {
+        box.classList.add('redundant');
+      }
+      // <<<
       box.style.left = p.x+'px'; box.style.top = p.y+'px';
       box.id = `node-${n.id}`;
       box.dataset.id = n.id;
@@ -304,29 +307,23 @@
     applyTransform(); // assure la synchro après build
   }
 
-  // --- Example ---
+  // --- Example (inclut matchParent) ---
   function fillExample(){
     txt.value =
-`{"sch":"np-solver/1.0","inputs":{"A":0,"B":1,"C":2,"D":3},"operators":"+-x>:hl#a","boolOp":"b","solution":499,"generatedAt":"2025-08-18T20:39:35"}
-{"id":0,"kind":"input","name":"A","outputs":["-74","65"]}
-{"id":1,"kind":"input","name":"B","outputs":["101","151"]}
-{"id":2,"kind":"input","name":"C","outputs":["168","-123"]}
-{"id":3,"kind":"input","name":"D","outputs":["-62","217"]}
-{"id":4,"kind":"op","op":"#","onlyA":true,"label":"# C","parents":[2,1],"outputs":["12","0"]}
-{"id":5,"kind":"op","op":"a","onlyA":true,"label":"a D","parents":[3,4],"outputs":["62","217"]}
-{"id":7,"kind":"op","op":">","onlyA":false,"label":"5 > A","parents":[5,0],"outputs":["true","true"]}
-{"id":9,"kind":"op","op":"b","onlyA":false,"label":"7 b 4","parents":[7,4],"outputs":["N","N"]}
-{"id":10,"kind":"op","op":">","onlyA":false,"label":"9 > D","parents":[9,3],"outputs":["N","N"]}
-{"id":11,"kind":"op","op":">","onlyA":false,"label":"C > A","parents":[2,0],"outputs":["true","false"]}
-{"id":14,"kind":"op","op":"h","onlyA":false,"label":"A h 10","parents":[0,10],"outputs":["N","N"]}
-{"id":20,"kind":"op","op":"b","onlyA":false,"label":"14 b 11","parents":[14,11],"outputs":["N","N"]}
-{"id":22,"kind":"op","op":">","onlyA":false,"label":"A > B","parents":[0,1],"outputs":["false","false"]}
-{"id":23,"kind":"op","op":">","onlyA":false,"label":"C > D","parents":[2,3],"outputs":["true","false"]}
-{"id":27,"kind":"op","op":"b","onlyA":false,"label":"23 b 20","parents":[23,20],"outputs":["N","N"]}
-{"id":29,"kind":"op","op":"b","onlyA":false,"label":"22 b 27","parents":[22,27],"outputs":["N","N"]}
-{"id":32,"kind":"op","op":"b","onlyA":false,"label":"29 b 22","parents":[29,22],"outputs":["N","N"]}
-{"id":48,"kind":"op","op":"b","onlyA":false,"label":"22 b 32","parents":[22,32],"outputs":["N","N"]}
-{"id":499,"kind":"op","op":":","onlyA":false,"label":"48 : 32","parents":[48,32],"outputs":["N","N"]}`;
+`{"sch":"np-solver/1.0","inputs":{"A":0,"B":1,"C":2,"D":3},"operators":"+-x>:hl#a","boolOp":"b","solution":423,"generatedAt":"2025-08-18T22:04:59"}
+{"id":0,"kind":"input","name":"A","outputs":["-146","-101","-245","-170","-45"]}
+{"id":1,"kind":"input","name":"B","outputs":["127","99","44","0","252"]}
+{"id":2,"kind":"input","name":"C","outputs":["-38","76","91","-281","-46"]}
+{"id":3,"kind":"input","name":"D","outputs":["295","-95","66","-11","-177"]}
+{"id":4,"kind":"op","op":">","onlyA":false,"label":"A > B","parents":[0,1],"matchParent":false,"outputs":["false","false","false","false","false"]}
+{"id":5,"kind":"op","op":":","onlyA":false,"label":"C : A","parents":[2,0],"matchParent":true,"outputs":["-146","-101","-245","-170","-45"]}
+{"id":6,"kind":"op","op":">","onlyA":false,"label":"C > D","parents":[2,3],"matchParent":false,"outputs":["false","true","true","false","true"]}
+{"id":7,"kind":"op","op":"b","onlyA":false,"label":"D b 4","parents":[3,4],"matchParent":false,"outputs":["295","-95","66","-11","-177"]}
+{"id":8,"kind":"op","op":"b","onlyA":false,"label":"7 b 6","parents":[7,6],"matchParent":false,"outputs":["N","-95","66","N","-177"]}
+{"id":9,"kind":"op","op":"b","onlyA":false,"label":"5 b 4","parents":[5,4],"matchParent":false,"outputs":["N","N","N","N","N"]}
+{"id":10,"kind":"op","op":"l","onlyA":false,"label":"8 l 9","parents":[8,9],"matchParent":false,"outputs":["N","N","N","N","N"]}
+{"id":34,"kind":"op","op":">","onlyA":false,"label":"A > C","parents":[0,2],"matchParent":false,"outputs":["false","false","false","true","true"]}
+{"id":423,"kind":"op","op":"b","onlyA":false,"label":"10 b 34","parents":[10,34],"matchParent":false,"outputs":["N","N","N","N","N"]}`;
   }
 
   buildBtn.addEventListener('click', build);

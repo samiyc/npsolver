@@ -308,14 +308,27 @@ public class Node {
                 m.put("label", Node.toStrId(nodeA) + " " + chOp + " " + Node.toStrId(nodeB));
             }
 
-            // parents → IDs seulement (évite les cycles)
+            // Parents → IDs seulement (évite les cycles)
             List<Integer> parents = new ArrayList<>();
-            if (this.nodeA != null)
+            boolean eqParent = false;
+
+            if (this.nodeA != null) {
                 parents.add(this.nodeA.id);
-            if (this.nodeB != null && !onlyA)
+                // Comparaison des outs
+                if (outsEqual(this.nodeA.outs, this.outs)) {
+                    eqParent = true;
+                }
+            }
+            if (this.nodeB != null && !onlyA) {
                 parents.add(this.nodeB.id);
-            // si tu as plus de 2 sources, ajoute-les ici
+                // Comparaison des outs
+                if (outsEqual(this.nodeB.outs, this.outs)) {
+                    eqParent = true;
+                }
+            }
+
             m.put("parents", parents);
+            m.put("matchParent", eqParent);
         }
 
         // outputs → les 2 dernières valeurs en CHAÎNES
@@ -330,10 +343,40 @@ public class Node {
         int n = this.outs.size();
 
         List<String> out = new ArrayList<>();
-        for (int i = n-x; i < n; i++) {
+        for (int i = n - x; i < n; i++) {
             out.add(this.outs.get(Math.max(0, i)).toString());
         }
         return out;
+    }
+
+    /** Compare deux listes de Value élément par élément. */
+    private static boolean outsEqual(List<Value> p, List<Value> c) {
+        if (p == c)
+            return true;
+        if (p == null || c == null)
+            return false;
+        if (p.size() != c.size())
+            return false;
+        for (int i = 0; i < p.size(); i++) {
+            if (!valueEquals(p.get(i), c.get(i)))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Égalité robuste pour une Value (null-safe).
+     * Si Value.equals(...) est bien défini chez toi, il sera utilisé.
+     * Sinon on retombe sur toString() pour éviter les surprises (true/N/num).
+     */
+    private static boolean valueEquals(Value a, Value b) {
+        if (a == b)
+            return true;
+        if (a == null || b == null)
+            return false;
+        if (a.equals(b))
+            return true;
+        return String.valueOf(a).equals(String.valueOf(b));
     }
 
 }// End of Node
