@@ -13,6 +13,7 @@ import dev.samiyc.npsolver.bean.InOut;
 import dev.samiyc.npsolver.bean.Node;
 import dev.samiyc.npsolver.bean.NodeTest;
 import dev.samiyc.npsolver.bean.Value;
+import dev.samiyc.npsolver.utils.OperatorEnum;
 
 class MainStaticServiceTest {
 
@@ -23,7 +24,7 @@ class MainStaticServiceTest {
     @Test
     void initNodes() {
         List<Node> nodes = MainStaticService.initNodes();
-        int nbInputs = (int) nodes.stream().filter(n -> n.op == MAX_OP).count();
+        int nbInputs = (int) nodes.stream().filter(n -> n.op == OperatorEnum.INPUT).count();
 
         Assertions.assertEquals(MAX_ID, nodes.size());
         Assertions.assertEquals(NB_INPUT, nbInputs);

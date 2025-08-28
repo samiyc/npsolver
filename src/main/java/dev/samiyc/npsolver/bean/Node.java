@@ -12,12 +12,13 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.samiyc.npsolver.service.EvaluationStaticService;
+import dev.samiyc.npsolver.utils.OperatorEnum;
 
 public class Node {
     public static final String STR_ABCD = "ABCD";
-    public static final String STR_OPERATOR = "+-x>:hm#a ";
+    public int id;
     public Node nodeA, nodeB;
-    public int id, op;
+    public OperatorEnum op;
     public double avgEval = 0.0;
     public List<Value> outs;
     public List<Short> evals;
@@ -30,7 +31,7 @@ public class Node {
      */
     public Node(int curId) {
         id = curId;
-        op = MAX_OP;
+        op = OperatorEnum.INPUT;
         outs = new ArrayList<>();
         nodeA = this;
         nodeB = this;
@@ -59,13 +60,16 @@ public class Node {
         int conflict = 0, ida, idb, idRdc;
         boolean any;
         do {
-            idRdc = id > 20 ? 20 + conflict : id - 1;
+            idRdc = id > 20 + conflict ? 20 + conflict : id - 1;
             idRdc = id > MAX_ID / 2 ? id / 10 : idRdc;
             ida = random.nextInt(idRdc);
             idb = random.nextInt(idRdc);
             if (ida == idb)
                 idb++;
-            op = random.nextInt(count % 1000 < 100 ? 3 : MAX_OP);
+            this.op = selectOperator(nodes, ida, idb);
+            if (this.op == OperatorEnum.NOOP) {
+                throw new RuntimeException("NOOP !!!");
+            }
 
             // Duplicate ? retry 10x
             final int fida = ida, fidb = idb;
@@ -73,8 +77,22 @@ public class Node {
                     ((p.nodeA.id == fida && p.nodeB.id == fidb) || (p.nodeA.id == fidb && p.nodeB.id == fida)));
         } while (any && ++conflict < 30);
         if (conflict > 29)
-            throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + ida + " conflict:" + conflict);
+            throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + idb + " conflict:" + conflict);
         return Arrays.asList(ida, idb);
+    }
+
+    private OperatorEnum selectOperator(List<Node> nodes, int ida, int idb) {
+        OperatorEnum operator;
+        Node na = nodes.get(ida);
+        Node nb = nodes.get(idb);
+        if (na.op == null || nb.op == null) {
+            throw new RuntimeException("NOOP !!!");
+        } else if (na.op.isOutputTypeMath() && nb.op.isOutputTypeMath()) {
+            operator = OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.MATH);
+        } else {
+            operator = OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.BOTH);// fix add BOOLEAN operator ?
+        }
+        return operator;
     }
 
     public void compute(InOut io) {
@@ -87,21 +105,30 @@ public class Node {
             } else if (b.isBool() && a.isInt()) {
                 outs.add(boolIntInteraction(b, a));
             } else {
-                if (op == 0)      outs.add(a.add(b));
-                else if (op == 1) outs.add(a.minus(b));
-                else if (op == 2) outs.add(a.mult(b));
-                else if (op == 3) outs.add(a.sup(b));
-                else if (op == 4) outs.add(a.alternative(b));
-                else if (op == 5) outs.add(a.hypot(b));
-                else if (op == 6) outs.add(a.min(b));
-                else if (op == 7) outs.add(a.sqrt());
-                else if (op == 8) outs.add(a.abs());
+                if (op == OperatorEnum.ADD)
+                    outs.add(a.add(b));
+                else if (op == OperatorEnum.MINUS)
+                    outs.add(a.minus(b));
+                else if (op == OperatorEnum.MULT)
+                    outs.add(a.mult(b));
+                else if (op == OperatorEnum.MORE_THAN)
+                    outs.add(a.sup(b));
+                else if (op == OperatorEnum.ALT)
+                    outs.add(a.alternative(b));
+                else if (op == OperatorEnum.HYPOT)
+                    outs.add(a.hypot(b));
+                else if (op == OperatorEnum.MIN)
+                    outs.add(a.min(b));
+                else if (op == OperatorEnum.SQRT)
+                    outs.add(a.sqrt());
+                else if (op == OperatorEnum.ABS)
+                    outs.add(a.abs());
             }
         }
     }
 
     private Value boolIntInteraction(Value bl, Value nt) {
-        return bl.bool == (op >= MAX_OP / 2) ? nt : new Value();
+        return bl.bool ? nt : new Value(); // fixme bool operator, invers etc
     }
 
     public void evaluate(List<InOut> map) {
@@ -216,7 +243,7 @@ public class Node {
         char chOp;
         String nodeSrcAndOp = "---";
         if (nodeA != null) {
-            chOp = getChOp();
+            chOp = op.getSymbol();
             String ida = toStrId(nodeA);
             String idb = toStrId(nodeB);
             nodeSrcAndOp = ida + chOp + idb;
@@ -256,11 +283,11 @@ public class Node {
     }
 
     public boolean isInput() {
-        return op == MAX_OP;
+        return op == OperatorEnum.INPUT;
     }
 
     public boolean isCompute() {
-        return op != MAX_OP;
+        return op != OperatorEnum.INPUT;
     }
 
     public double getAvgEval() {
@@ -294,9 +321,9 @@ public class Node {
             m.put("name", toStrId(this));
         } else {
             // expr lisible (ex: "B a A") ou raw (ex: "BaA") – ajuste selon tes champs
-            char chOp = getChOp();
+            char chOp = op.getSymbol();
             m.put("op", chOp);
-            Boolean onlyA = isOnlyA();
+            Boolean onlyA = op.isUnary();
             m.put("onlyA", onlyA);
             if (onlyA) {
                 m.put("label", chOp + " " + Node.toStrId(nodeA));
@@ -340,41 +367,6 @@ public class Node {
         m.put("outputs", getLastXoutputsAsStrings(5));
 
         return m;
-    }
-
-    // Renvoie l'opérateur effectif pour ce nœud.
-    // - Si l'op "de base" est unaire ('a' ou '#'), on le renvoie tel quel
-    // (prioritaire).
-    // - Sinon, si au moins un parent a un lastOut() booléen -> 'b' (op booléen).
-    // - Sinon, on renvoie l'opérateur de base depuis STR_OPERATOR.
-    public char getChOp() {
-        // Sécurise l'accès au char "de base"
-        char base = (op >= 0 && op < STR_OPERATOR.length()) ? STR_OPERATOR.charAt(op) : '?';
-
-        // Les unaires doivent rester unaires, peu importe les parents
-        if (base == 'a' || base == '#') {
-            return base;
-        }
-
-        // Détection booléenne null-safe sur les parents
-        boolean anyBool = false;
-        if (nodeA != null) {
-            Value va = nodeA.lastOut();
-            if (va != null && va.isBool())
-                anyBool = true;
-        }
-        if (!anyBool && nodeB != null) {
-            Value vb = nodeB.lastOut();
-            if (vb != null && vb.isBool())
-                anyBool = true;
-        }
-
-        return anyBool ? 'b' : base;
-    }
-
-    public boolean isOnlyA() {
-        char chOp = getChOp();
-        return "#a".contains("" + chOp);
     }
 
     private List<String> getLastXoutputsAsStrings(int x) {
@@ -444,16 +436,16 @@ public class Node {
     public boolean hasEffectiveChildren() {
         boolean retour = false;
         for (Node child : this.childs)
-            if (child.isOnlyA()) {
-                child.nodeB = null;
-            }
+            if (child.nodeA != null && child.nodeA.id == id || child.nodeB != null && child.nodeB.id == id) {
                 retour = true;
+            }
         return retour;
     }
 
     /**
      * Top-K valeurs les plus fréquentes dans une liste de Value
      * Null-safe, garde l'ordre d'apparition pour départager les ex-aequo.
+     *
      * @param values
      * @param k
      * @return

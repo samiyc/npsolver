@@ -1,11 +1,8 @@
 package dev.samiyc.npsolver.utils;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,7 +68,7 @@ public final class NodePrinter {
             meta.put("inputs", map);
 
             // Opérateurs (math + booléen)
-            meta.put("operators", Node.STR_OPERATOR.trim());
+            meta.put("operators", OperatorEnum.LIST_OPERATOR);
             meta.put("boolOp", "b");
 
             // Id de la solution (node max à 100%)

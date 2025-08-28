@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import dev.samiyc.npsolver.service.EvaluationStaticService;
 import dev.samiyc.npsolver.service.MainStaticService;
+import dev.samiyc.npsolver.utils.OperatorEnum;
 
 public class NodeTest {
     @Test
@@ -38,42 +39,42 @@ public class NodeTest {
     @Test
     void compute_HighOp_IntBool_expInt() {
         List<Node> nodes = initInputNode(new Value(23), new Value(true));
-        Node node = createNodeAndCompute(nodes, MAX_OP - 1);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.INPUT);
         Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
     }
 
     @Test
     void compute_HighOp_BoolInt_expInt() {
         List<Node> nodes = initInputNode(new Value(true), new Value(23));
-        Node node = createNodeAndCompute(nodes, MAX_OP - 1);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.INPUT);
         Assertions.assertEquals(nodes.getLast().lastOut(), node.lastOut());
     }
 
     @Test
     void compute_HighOp_BoolInt_expEmpty() {
         List<Node> nodes = initInputNode(new Value(false), new Value(23));
-        Node node = createNodeAndCompute(nodes, MAX_OP - 1);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ABS);
         Assertions.assertTrue(node.lastOut().isEmpty());
     }
 
     @Test
     void compute_LowOp_IntBool_expInt() {
         List<Node> nodes = initInputNode(new Value(-11), new Value(false));
-        Node node = createNodeAndCompute(nodes, 1);
+    Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
         Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
     }
 
     @Test
     void compute_LowOp_BoolInt_expInt() {
         List<Node> nodes = initInputNode(new Value(false), new Value(-11));
-        Node node = createNodeAndCompute(nodes, 1);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
         Assertions.assertEquals(nodes.getLast().lastOut(), node.lastOut());
     }
 
     @Test
     void compute_LowOp_BoolInt_expEmpty() {
         List<Node> nodes = initInputNode(new Value(true), new Value(-11));
-        Node node = createNodeAndCompute(nodes, 1);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
         Assertions.assertTrue(node.lastOut().isEmpty());
     }
 
@@ -89,7 +90,7 @@ public class NodeTest {
         }
     }
 
-    private static Node createNodeAndCompute(List<Node> nodes, int op) {
+    private static Node createNodeAndCompute(List<Node> nodes, OperatorEnum op) {
         Node node = new Node(nodes, 2, 0);
         node.nodeA = nodes.getFirst();
         node.nodeB = nodes.getLast();
@@ -122,7 +123,7 @@ public class NodeTest {
         Node thrdNod = new Node(nodes, 2, 0);
         thrdNod.nodeA = nodes.getFirst();
         thrdNod.nodeB = nodes.getLast();
-        thrdNod.op = 0;
+        thrdNod.op = OperatorEnum.ADD;
         nodes.add(thrdNod);
 
         // Init the map
@@ -156,7 +157,7 @@ public class NodeTest {
         Node thrdNod = new Node(nodes, 2, 0);
         thrdNod.nodeA = nodes.getFirst();
         thrdNod.nodeB = nodes.getLast();
-        thrdNod.op = 1;
+        thrdNod.op = OperatorEnum.MINUS;
         nodes.add(thrdNod);
 
         // Init the map
@@ -209,8 +210,8 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 10);
-        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 21);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, OperatorEnum.MINUS, 10);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, OperatorEnum.MINUS, 21);
         // Function call
         frthNod.backProp();
         // Evals
@@ -223,15 +224,15 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 21);
-        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 11);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, OperatorEnum.MINUS, 21);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, OperatorEnum.MINUS, 11);
         // Function call
         frthNod.backProp();
         // Evals
         Assertions.assertEquals(21.0, thrdNod.avgEval);
     }
 
-    private static Node createCustomNode(List<Node> nodes, int ida, int idb, int curId, int op, int avgEval) {
+    private static Node createCustomNode(List<Node> nodes, int ida, int idb, int curId, OperatorEnum op, int avgEval) {
         Node customNode = new Node(curId);
         customNode.outs = new ArrayList<>();
         customNode.evals = new ArrayList<>();
@@ -252,8 +253,8 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 21);
-        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 10);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, OperatorEnum.MINUS, 21);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, OperatorEnum.MINUS, 10);
         // Function call
         frthNod.forwardProp();
 
@@ -276,8 +277,8 @@ public class NodeTest {
         List<Node> nodes = new ArrayList<>();
         nodes.add(new Node(0));
         nodes.add(new Node(1));
-        Node thrdNod = createCustomNode(nodes, 0, 1, 2, 1, 10);
-        Node frthNod = createCustomNode(nodes, 0, 2, 3, 1, 21);
+        Node thrdNod = createCustomNode(nodes, 0, 1, 2, OperatorEnum.MINUS, 10);
+        Node frthNod = createCustomNode(nodes, 0, 2, 3, OperatorEnum.MINUS, 21);
         // Function call
         frthNod.forwardProp();
 
@@ -312,9 +313,9 @@ public class NodeTest {
         nodes.add(new Node(1));
         nodes.add(new Node(2));
         nodes.add(new Node(3));
-        Node nodeA = createCustomNode(nodes, 0, 1, 4, 2, 10);
-        Node nodeB = createCustomNode(nodes, 0, 4, 5, 4, 10);
-        Node nodeC = createCustomNode(nodes, 0, 5, 6, 0, 10);
+        Node nodeA = createCustomNode(nodes, 0, 1, 4, OperatorEnum.MULT, 10);
+        Node nodeB = createCustomNode(nodes, 0, 4, 5, OperatorEnum.ABS, 10);
+        Node nodeC = createCustomNode(nodes, 0, 5, 6, OperatorEnum.ADD, 10);
 
         // Function call
         for (InOut io : map)
