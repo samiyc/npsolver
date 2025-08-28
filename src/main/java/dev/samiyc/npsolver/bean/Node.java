@@ -1,11 +1,7 @@
 package dev.samiyc.npsolver.bean;
 
-import static dev.samiyc.npsolver.service.EvaluationStaticService.VALUE_FOUND;
-import static dev.samiyc.npsolver.service.MainStaticService.MAX_ID;
-import static dev.samiyc.npsolver.service.MainStaticService.MAX_OP;
-import static dev.samiyc.npsolver.service.MainStaticService.MSG_INFO;
-import static dev.samiyc.npsolver.service.MainStaticService.NB_INPUT;
-import static dev.samiyc.npsolver.service.MainStaticService.random;
+import static dev.samiyc.npsolver.service.EvaluationStaticService.*;
+import static dev.samiyc.npsolver.service.MainStaticService.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +15,7 @@ import dev.samiyc.npsolver.service.EvaluationStaticService;
 
 public class Node {
     public static final String STR_ABCD = "ABCD";
-    public static final String STR_OPERATOR = "+-x>:hl#a ";
+    public static final String STR_OPERATOR = "+-x>:hm#a ";
     public Node nodeA, nodeB;
     public int id, op;
     public double avgEval = 0.0;
@@ -220,7 +216,7 @@ public class Node {
         char chOp;
         String nodeSrcAndOp = "---";
         if (nodeA != null) {
-            chOp = nodeA.lastOut().isBool() || nodeB.lastOut().isBool() ? 'b' : STR_OPERATOR.charAt(op);
+            chOp = getChOp();
             String ida = toStrId(nodeA);
             String idb = toStrId(nodeB);
             nodeSrcAndOp = ida + chOp + idb;
@@ -298,9 +294,9 @@ public class Node {
             m.put("name", toStrId(this));
         } else {
             // expr lisible (ex: "B a A") ou raw (ex: "BaA") – ajuste selon tes champs
-            char chOp = nodeA.lastOut().isBool() || nodeB.lastOut().isBool() ? 'b' : STR_OPERATOR.charAt(op);
+            char chOp = getChOp();
             m.put("op", chOp);
-            Boolean onlyA = "#a".contains("" + chOp);
+            Boolean onlyA = isOnlyA();
             m.put("onlyA", onlyA);
             if (onlyA) {
                 m.put("label", chOp + " " + Node.toStrId(nodeA));
@@ -329,12 +325,56 @@ public class Node {
 
             m.put("parents", parents);
             m.put("matchParent", eqParent);
+
+            // is constant ? toutes les sorties sont identiques
+            m.put("constant", isConstantOuts());
+            if (isConstantOuts()) {
+                m.put("constantValue", String.valueOf(this.outs.get(0)));
+            }
+
+            // tag "asChildren" (a-t-il au moins un enfant effectif ?) ---
+            m.put("asChildren", this.hasEffectiveChildren());
         }
 
-        // outputs → les 2 dernières valeurs en CHAÎNES
+        // outputs → les dernières valeurs en texte
         m.put("outputs", getLastXoutputsAsStrings(5));
 
         return m;
+    }
+
+    // Renvoie l'opérateur effectif pour ce nœud.
+    // - Si l'op "de base" est unaire ('a' ou '#'), on le renvoie tel quel
+    // (prioritaire).
+    // - Sinon, si au moins un parent a un lastOut() booléen -> 'b' (op booléen).
+    // - Sinon, on renvoie l'opérateur de base depuis STR_OPERATOR.
+    public char getChOp() {
+        // Sécurise l'accès au char "de base"
+        char base = (op >= 0 && op < STR_OPERATOR.length()) ? STR_OPERATOR.charAt(op) : '?';
+
+        // Les unaires doivent rester unaires, peu importe les parents
+        if (base == 'a' || base == '#') {
+            return base;
+        }
+
+        // Détection booléenne null-safe sur les parents
+        boolean anyBool = false;
+        if (nodeA != null) {
+            Value va = nodeA.lastOut();
+            if (va != null && va.isBool())
+                anyBool = true;
+        }
+        if (!anyBool && nodeB != null) {
+            Value vb = nodeB.lastOut();
+            if (vb != null && vb.isBool())
+                anyBool = true;
+        }
+
+        return anyBool ? 'b' : base;
+    }
+
+    public boolean isOnlyA() {
+        char chOp = getChOp();
+        return "#a".contains("" + chOp);
     }
 
     private List<String> getLastXoutputsAsStrings(int x) {
@@ -377,6 +417,85 @@ public class Node {
         if (a.equals(b))
             return true;
         return String.valueOf(a).equals(String.valueOf(b));
+    }
+
+    /**
+     * Noeud constant = toutes les valeurs out identiques (y compris 1 seul
+     * élément).
+     */
+    private boolean isConstantOuts() {
+        if (this.outs == null || this.outs.isEmpty())
+            return false;
+        return allOutsEqual(this.outs);
+    }
+
+    /** Toutes les sorties sont-elles identiques ? (liste vide -> false) */
+    private static boolean allOutsEqual(List<Value> outs) {
+        if (outs == null || outs.isEmpty())
+            return false; // à toi de voir si 0 élément = constant
+        Value first = outs.get(0);
+        for (int i = 1; i < outs.size(); i++) {
+            if (!valueEquals(first, outs.get(i)))
+                return false;
+        }
+        return true;
+    }
+
+    public boolean hasEffectiveChildren() {
+        boolean retour = false;
+        for (Node child : this.childs)
+            if (child.isOnlyA()) {
+                child.nodeB = null;
+            }
+                retour = true;
+        return retour;
+    }
+
+    /**
+     * Top-K valeurs les plus fréquentes dans une liste de Value
+     * Null-safe, garde l'ordre d'apparition pour départager les ex-aequo.
+     * @param values
+     * @param k
+     * @return
+     */
+    private static List<String> mostCommon(List<Value> values, int k) {
+        if (values == null || values.isEmpty() || k <= 0) {
+            return java.util.Collections.emptyList();
+        }
+
+        // value -> [count, firstIndex]
+        java.util.Map<String, int[]> freq = new java.util.LinkedHashMap<>();
+
+        for (int i = 0; i < values.size(); i++) {
+            String key = String.valueOf(values.get(i)).trim();
+            int[] slot = freq.get(key);
+            if (slot == null) {
+                slot = new int[] { 0, i };
+                freq.put(key, slot);
+            }
+            slot[0]++; // +1 occurrence
+        }
+
+        // Trie: count desc, puis firstIndex asc
+        java.util.List<java.util.Map.Entry<String, int[]>> entries = new java.util.ArrayList<>(freq.entrySet());
+
+        entries.sort((e1, e2) -> {
+            int c = Integer.compare(e2.getValue()[0], e1.getValue()[0]); // count desc
+            if (c != 0)
+                return c;
+            return Integer.compare(e1.getValue()[1], e2.getValue()[1]); // firstIndex asc
+        });
+
+        java.util.List<String> top = new java.util.ArrayList<>(Math.min(k, entries.size()));
+        for (int i = 0; i < entries.size() && i < k; i++) {
+            top.add(entries.get(i).getKey());
+        }
+        return top;
+    }
+
+    // Expose côté instance (solution.mostCommonOuts(5) pour la méta)
+    public java.util.List<String> mostCommonOuts(int k) {
+        return mostCommon(this.outs, k);
     }
 
 }// End of Node

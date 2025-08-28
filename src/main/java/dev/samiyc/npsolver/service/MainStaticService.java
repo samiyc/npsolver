@@ -1,5 +1,5 @@
 package dev.samiyc.npsolver.service;
- 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -12,7 +12,8 @@ public class MainStaticService {
     public static final int MAX_OP = 9;
     public static final int MAX_ID = 500, NB_INPUT = 4;
     public static final int MAX_CYCLE = 2000, IO_MAP_NB_ENTRY = 100;
-    public static final double NOISE_LIMIT = 1.0;
+    public static final int NOISE_SPIKE_CYCLE = 50;
+    public static final double NOISE_LIMIT = 1.0, NOISE_SPIKE_HIGH = 90;
     public static final Random random = new Random();
 
     private MainStaticService() {
@@ -77,7 +78,8 @@ public class MainStaticService {
         }
     }
 
-    public static void performanceInfos(long cycleStartCt, long initMapCt, long computeCt, long evalCt, long backPropCt) {
+    public static void performanceInfos(long cycleStartCt, long initMapCt, long computeCt, long evalCt,
+            long backPropCt) {
         long endCycleCt = System.currentTimeMillis();
         long totalCt = endCycleCt - cycleStartCt;
         long cleanUpCt = endCycleCt - backPropCt;
@@ -85,7 +87,8 @@ public class MainStaticService {
         evalCt -= computeCt;
         computeCt -= initMapCt;
         initMapCt -= cycleStartCt;
-        System.out.println("Cycle:" + totalCt + " initMap:" + initMapCt + " compute:" + computeCt + " eval:" + evalCt + " backProp:" + backPropCt + " cleanUp:" + cleanUpCt);
+        System.out.println("Cycle:" + totalCt + " initMap:" + initMapCt + " compute:" + computeCt + " eval:" + evalCt
+                + " backProp:" + backPropCt + " cleanUp:" + cleanUpCt);
     }
 
     public static List<Node> initNodes() {
@@ -98,13 +101,14 @@ public class MainStaticService {
     }
 
     public static void cleanUp(List<Node> nodes, int maxId, int count) {
-        double noiseLimit = count % 50 == 0 ? 90 : NOISE_LIMIT;
+        double noiseLimit = count % NOISE_SPIKE_CYCLE == 0 ? NOISE_SPIKE_HIGH : NOISE_LIMIT;
         nodes.forEach(n -> n.cleanUp(noiseLimit));
         nodes.removeIf(n -> n.isCompute() && !n.asParent());
         nodes.forEach(Node::reset);
         for (int i = 0; i < maxId; i++) {
-            if (i < nodes.size()) nodes.get(i).id = i;
-            else {
+            if (i < nodes.size()) {
+                nodes.get(i).id = i;
+            } else {
                 nodes.add(new Node(nodes, i, count));
             }
         }
@@ -121,4 +125,4 @@ public class MainStaticService {
                 .reduce(Double.MIN_VALUE, Double::max);
     }
 
-}//End of Main.SS
+}// End of Main.SS

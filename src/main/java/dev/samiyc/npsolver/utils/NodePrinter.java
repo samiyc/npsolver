@@ -1,8 +1,11 @@
 package dev.samiyc.npsolver.utils;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +39,7 @@ public final class NodePrinter {
             // Collect all contributing nodes (excluding the solution itself)
             Node sol = latest.get();
             Set<Node> ancestors = new HashSet<>();
+            ancestors.add(sol);
             sol.collectAncestors(ancestors);
 
             // Order by id
@@ -44,13 +48,12 @@ public final class NodePrinter {
                     .collect(Collectors.toList());
 
             System.out.println("-- Node Tree Solution --");
-            System.out.println(metaString(nodes, sol));
+            System.out.println(metaString(nodes, sol)); // Ligne meta
 
-            // Imprime les ancêtres en JSON
-            byId.forEach(n -> System.out.println(n.toJsonString()));
-
-            // Imprime aussi la solution en JSON
-            System.out.println(sol.toJsonString());
+            // Impression NDJSON (utilise toJsonString() qui lit toJsonDto())
+            for (Node n : byId) {
+                System.out.println(n.toJsonString());
+            }
             System.out.println();
         }
     }
@@ -73,7 +76,8 @@ public final class NodePrinter {
 
             // Id de la solution (node max à 100%)
             if (solution != null) {
-                meta.put("solution", solution.id);
+                meta.put("solutionId", solution.id);
+                meta.put("mostCommonSol", solution.mostCommonOuts(5));
             }
 
             // Date de génération
