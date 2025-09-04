@@ -20,23 +20,25 @@ public class Value {
 
     public Value add(Value other) {
         if (bothInt(other)) return new Value(number + other.number);
-        if (bothBool(other)) return new Value(bool || other.bool);
+        if (bothBool(other)) error(other, "ADD WITH BOOL");
         return new Value();
     }
 
     public Value mult(Value other) {
         if (bothInt(other)) return new Value(number * other.number);
-        if (bothBool(other)) return new Value(bool && other.bool);
+        if (bothBool(other)) error(other, "MULT WITH BOOL");
         return new Value();
     }
 
     public Value sup(Value other) {
         if (bothInt(other)) return new Value(number > other.number);
+        if (bothBool(other)) error(other, "SUP WITH BOOL");
         return new Value();
     }
 
     public Value hypot(Value other) {
         if (bothInt(other)) return new Value((int) Math.hypot(number, other.number));
+        if (bothBool(other)) error(other, "HYPO WITH BOOL");
         return new Value();
     }
 
@@ -49,15 +51,13 @@ public class Value {
         if (isInt()) return new Value(Math.abs(number));
         return new Value();
     }
-
     public Value min(Value other) {
         if (bothInt(other)) return new Value(Math.min(number, other.number));
         return new Value();
     }
 
     public Value alternative(Value other) {
-        if (bothInt(other)) return other;
-        if (bothBool(other)) return other;
+        if (bothBool(other)) error(other, "ALT WITH BOOL");
         if (isEmpty()) return other;
         return this;
     }
@@ -66,6 +66,25 @@ public class Value {
         if (bothInt(other)) return new Value(number - other.number);
         if (bothBool(other)) return new Value(!bool.equals(other.bool));
         return new Value();
+    }
+
+    public Value and(Value other) {
+        if (!bothBool(other)) error(other, "AND with math val");
+        return new Value(bool && other.bool);
+    }
+
+    public Value or(Value other) {
+        if (!bothBool(other)) error(other, "OR with math val");
+        return new Value(bool || other.bool);
+    }
+
+    public Value xor(Value other) {
+        if (!bothBool(other)) error(other, "XOR with math val");
+        return new Value(!bool.equals(other.bool));
+    }
+
+    private void error(Value other, String msg) {
+        throw new RuntimeException(msg+" a:" + this +" b:"+ other);
     }
 
     @Override

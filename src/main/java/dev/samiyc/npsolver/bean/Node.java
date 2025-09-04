@@ -15,271 +15,85 @@ import dev.samiyc.npsolver.service.EvaluationStaticService;
 import dev.samiyc.npsolver.utils.OperatorEnum;
 
 public class Node {
+
     public static final String STR_ABCD = "ABCD";
+
     public int id;
-    public Node nodeA, nodeB;
     public OperatorEnum op;
     public double avgEval = 0.0;
-    public List<Value> outs;
-    public List<Short> evals;
+
+    // Nouvelles collections
+    public List<Node> parents; // A puis B (si binaire)
     public List<Node> childs;
 
+    public List<Value> outs;
+    public List<Short> evals;
+
     /**
-     * New Input nodes
-     *
-     * @param curId
+     * INPUT node
      */
     public Node(int curId) {
-        id = curId;
-        op = OperatorEnum.INPUT;
-        outs = new ArrayList<>();
-        nodeA = this;
-        nodeB = this;
+        this.id = curId;
+        this.op = OperatorEnum.INPUT;
+        this.parents = new ArrayList<>(0);
+        this.childs = new ArrayList<>();
+        this.outs = new ArrayList<>();
+        this.evals = new ArrayList<>();
     }
 
     /**
-     * New Compute node
-     *
-     * @param nodes use to verif if node is unique
-     * @param curId upper limit for node id as source
+     * Compute node (random wiring + operator selection)
+     * 
+     * @param nodes pool pour choisir des parents existants
+     * @param curId id de ce node
+     * @param count unused ici (préservé pour signature)
      */
     public Node(List<Node> nodes, int curId, int count) {
-        id = curId;
-        outs = new ArrayList<>();
-        evals = new ArrayList<>();
-        childs = new ArrayList<>();
-        List<Integer> ids = checkIds(nodes, count);
-        nodeA = nodes.stream().filter(p -> p.id == ids.getFirst()).findFirst().get();
-        nodeB = nodes.stream().filter(p -> p.id == ids.getLast()).findFirst().get();
-        nodeA.addChild(this);
-        nodeB.addChild(this);
-    }
+        this.id = curId;
+        this.parents = new ArrayList<>(2);
+        this.childs = new ArrayList<>();
+        this.outs = new ArrayList<>();
+        this.evals = new ArrayList<>();
 
-    private List<Integer> checkIds(List<Node> nodes, int count) {
-        // Randomly choose a unique ida, idb and operator
-        int conflict = 0, ida, idb, idRdc;
-        boolean any;
-        do {
-            idRdc = id > 20 + conflict ? 20 + conflict : id - 1;
-            idRdc = id > MAX_ID / 2 ? id / 10 : idRdc;
-            ida = random.nextInt(idRdc);
-            idb = random.nextInt(idRdc);
-            if (ida == idb)
-                idb++;
-            this.op = selectOperator(nodes, ida, idb);
-            if (this.op == OperatorEnum.NOOP) {
-                throw new RuntimeException("NOOP !!!");
-            }
+        List<Integer> ids = chooseParentIdsAndOperator(nodes);
+        // Parent A
+        Node na = nodes.get(ids.getFirst());
+        this.parents.add(na);
+        na.addChild(this);
 
-            // Duplicate ? retry 10x
-            final int fida = ida, fidb = idb;
-            any = nodes.stream().anyMatch(p -> p.nodeA != null && p.nodeB != null && p.op == op &&
-                    ((p.nodeA.id == fida && p.nodeB.id == fidb) || (p.nodeA.id == fidb && p.nodeB.id == fida)));
-        } while (any && ++conflict < 30);
-        if (conflict > 29)
-            throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + idb + " conflict:" + conflict);
-        return Arrays.asList(ida, idb);
-    }
-
-    private OperatorEnum selectOperator(List<Node> nodes, int ida, int idb) {
-        OperatorEnum operator;
-        Node na = nodes.get(ida);
-        Node nb = nodes.get(idb);
-        if (na.op == null || nb.op == null) {
-            throw new RuntimeException("NOOP !!!");
-        } else if (na.op.isOutputTypeMath() && nb.op.isOutputTypeMath()) {
-            operator = OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.MATH);
-        } else {
-            operator = OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.BOTH);// fix add BOOLEAN operator ?
-        }
-        return operator;
-    }
-
-    public void compute(InOut io) {
-        if (isInput()) {
-            outs.add(io.in.get(id));
-        } else {
-            Value a = nodeA.lastOut(), b = nodeB.lastOut();
-            if (a.isBool() && b.isInt()) {
-                outs.add(boolIntInteraction(a, b));
-            } else if (b.isBool() && a.isInt()) {
-                outs.add(boolIntInteraction(b, a));
-            } else {
-                if (op == OperatorEnum.ADD)
-                    outs.add(a.add(b));
-                else if (op == OperatorEnum.MINUS)
-                    outs.add(a.minus(b));
-                else if (op == OperatorEnum.MULT)
-                    outs.add(a.mult(b));
-                else if (op == OperatorEnum.MORE_THAN)
-                    outs.add(a.sup(b));
-                else if (op == OperatorEnum.ALT)
-                    outs.add(a.alternative(b));
-                else if (op == OperatorEnum.HYPOT)
-                    outs.add(a.hypot(b));
-                else if (op == OperatorEnum.MIN)
-                    outs.add(a.min(b));
-                else if (op == OperatorEnum.SQRT)
-                    outs.add(a.sqrt());
-                else if (op == OperatorEnum.ABS)
-                    outs.add(a.abs());
-            }
+        // Parent B (si binaire)
+        if (!this.op.isUnary() && ids.getLast() != -1) {
+            Node nb = nodes.get(ids.getLast());
+            this.parents.add(nb);
+            nb.addChild(this);
         }
     }
 
-    private Value boolIntInteraction(Value bl, Value nt) {
-        return bl.bool ? nt : new Value(); // fixme bool operator, invers etc
+    /*
+     * ========================= Core helpers (arity/parents)
+     * ==========================
+     */
+
+    private int arity() {
+        if (isInput())
+            return 0;
+        return op.isUnary() ? 1 : 2; // prêt pour >2 si un jour tu ajoutes de nouveaux opérateurs
     }
 
-    public void evaluate(List<InOut> map) {
-        if (isComputeWithParent()) {
-            Value out, exp, lout = new Value(), lexp = new Value();
-            for (int i = 0; i < outs.size(); i++) {
-                out = outs.get(i);
-                exp = map.get(i).out;
-
-                evals.add(EvaluationStaticService.eval(out, exp, out.minus(lout), exp.minus(lexp)));
-                lout = out;
-                lexp = exp;
-            }
-            avgEval = calcAverage(evals);
-        }
+    public Node parent(int index) {
+        return (parents != null && index >= 0 && index < parents.size()) ? parents.get(index) : null;
     }
 
-    public static double calcAverage(List<Short> numbers) {
-        if (numbers.isEmpty())
-            return 0.0;
-        return numbers.stream()
-                .mapToInt(Short::shortValue)
-                .average().getAsDouble();
+    public Node parentA() {
+        return parent(0);
     }
 
-    public void backProp() {
-        if (isComputeWithParent()) {
-            for (Node p : Arrays.asList(this.nodeA, this.nodeB)) {
-                if (p.isComputeWithParent()) {
-                    if (p.avgEval < this.avgEval) {
-                        // Give credit to parents
-                        p.avgEval = this.avgEval;
-                        p.backProp();
-                    }
-                }
-            }
-        }
+    public Node parentB() {
+        return parent(1);
     }
 
-    public void forwardProp() {
-        if (isComputeWithParent()) {
-            for (Node p : Arrays.asList(this.nodeA, this.nodeB)) {
-                if (p.isComputeWithParent() && p.avgEval > avgEval) {
-                    // Better parent. remove the child(s)
-                    prepareForDelete(11.11);
-                }
-            }
-        }
-    }
-
-    public void removeDuplicates(List<Node> nodes) {
-        if (isComputeWithParent() && avgEval > 0.0 && avgEval < 100.0) {
-            for (int i = id + 1; i < nodes.size(); i++) {
-                Node n = nodes.get(i);
-                if (n.outs != null && n.isComputeWithParent() && n.avgEval == avgEval) {
-                    int j = 0;
-                    while (j < n.outs.size() && outs.get(j).equals(n.outs.get(j)))
-                        j++;
-                    if (j >= n.outs.size()) {
-                        connectChildToGrandParentAndClean(n);
-                    }
-                }
-            }
-        }
-    }
-
-    private void connectChildToGrandParentAndClean(Node p) {
-        // Connect childs to gand parent (this)
-        childs.addAll(p.childs);
-        // Update child upper links to parent
-        for (Node c : p.childs) {
-            if (c.nodeA == p)
-                c.nodeA = this;
-            if (c.nodeB == p)
-                c.nodeB = this;
-        }
-        // Delete
-        childs.remove(p);
-        p.childs = null; // Ignore the childs in this case
-        p.prepareForDelete(33.33);
-    }
-
-    public void cleanUp(double min) {
-        if (isComputeWithParent() && avgEval < min) {
-            prepareForDelete(44.44);
-        }
-    }
-
-    private void prepareForDelete(double og) {
-        removeChilds(og);
-        childs = null;
-    }
-
-    private void removeChilds(double og) {
-        avgEval = og;
-        nodeA = null;
-        nodeB = null;
-        outs = null;
-        evals = null;
-        if (childs != null)
-            childs.forEach(n -> n.removeChilds(22.22));
-    }
-
-    public void reset() {
-        // Reset outs for next simulation
-        outs = new ArrayList<>();
-        evals = new ArrayList<>();
-    }
-
-    @Override
-    public String toString() {
-        char chOp;
-        String nodeSrcAndOp = "---";
-        if (nodeA != null) {
-            chOp = op.getSymbol();
-            String ida = toStrId(nodeA);
-            String idb = toStrId(nodeB);
-            nodeSrcAndOp = ida + chOp + idb;
-        }
-        String outss = "---";
-        if (outs != null && !outs.isEmpty()) {
-            outss = outs.get(outs.size() - 2) + " " + lastOut();
-        }
-        String strEval = avgEval == VALUE_FOUND ? ">> " + avgEval + " <<" : "" + avgEval;
-        return !MSG_INFO && isCompute() && !asParent() ? "_"
-                : id + "[" + nodeSrcAndOp + "|" + outss + "|" + strEval + "]";
-    }
-
-    public static String toStrId(Node n) {
-        if (n == null)
-            return "N";
-        return n.id < NB_INPUT ? "" + STR_ABCD.charAt(n.id) : Integer.toString(n.id);
-    }
-
-    public void addChild(Node node) {
-        if (isComputeWithParent())
-            childs.add(node);
-    }
-
-    public boolean isComputeWithParent() {
-        return isCompute() && asParent();
-    }
-
-    public Value lastOut() {
-        if (outs.isEmpty())
-            return new Value();
-        return outs.getLast();
-    }
-
-    public boolean asParent() {
-        return nodeA != null && nodeB != null;
+    public boolean hasAllRequiredParents() {
+        return parents != null && parents.size() >= arity();
     }
 
     public boolean isInput() {
@@ -290,15 +104,340 @@ public class Node {
         return op != OperatorEnum.INPUT;
     }
 
+    public boolean isComputeWithParent() {
+        return isCompute() && hasAllRequiredParents();
+    }
+
+    /* ========================= Wiring & selection ========================== */
+
+    private List<Integer> chooseParentIdsAndOperator(List<Node> nodes) {
+        int conflict = 0, ida, idb, idRdc;
+        boolean dup;
+        do {
+            idRdc = id > 20 + conflict ? 20 + conflict : id - 1;
+            idRdc = id > MAX_ID / 2 ? id / 10 : idRdc;
+
+            ida = random.nextInt(idRdc);
+            idb = random.nextInt(idRdc);
+            // if (ida == idb)
+            //     idb++;
+
+            this.op = selectOperator(nodes, ida, idb);
+            if (this.op == OperatorEnum.NOOP) {
+                throw new RuntimeException("NOOP !!!");
+            }
+            if (this.op.isUnary()) {
+                idb = -1; // un seul parent
+            }
+
+            final int fida = ida, fidb = idb;
+            // Duplicate detection (comme avant : ordre indifférent)
+            dup = nodes.stream().anyMatch(p -> p != null &&
+                    p.parents != null &&
+                    p.op == this.op &&
+                    p.parents.size() == (this.op.isUnary() ? 1 : 2) &&
+                    sameParentsIgnoringOrder(p, fida, fidb));
+        } while (dup && ++conflict < 30);
+
+        if (conflict > 29)
+            throw new RuntimeException("WARNING CONFLIC i:" + id + " a:" + ida + " b:" + idb + " conflict:" + conflict);
+
+        return Arrays.asList(ida, idb);
+    }
+
+    private boolean sameParentsIgnoringOrder(Node p, int ida, int idb) {
+        if (p.parents.isEmpty())
+            return false;
+        if (op.isUnary()) {
+            return p.parents.get(0).id == ida;
+        } else {
+            int pa = p.parents.get(0).id;
+            int pb = p.parents.get(1).id;
+            return (pa == ida && pb == idb) || (pa == idb && pb == ida);
+        }
+    }
+
+    private OperatorEnum selectOperator(List<Node> nodes, int ida, int idb) {
+        Node na = nodes.get(ida);
+        Node nb = nodes.get(idb);
+
+        if (na.id != ida || nb.id != idb)
+            throw new RuntimeException("GET(i) KO !!");
+        if (na.op == null || nb.op == null)
+            throw new RuntimeException("NOOP !!!");
+
+        if (na.op.isOutputTypeBoolean() && nb.op.isOutputTypeBoolean()) {
+            return OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.BOOLEAN);
+        } else if (na.op.isOutputTypeMath() && nb.op.isOutputTypeMath()) {
+            return OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.MATH);
+        }
+        return OperatorEnum.BOOL_INT;
+    }
+
+    public void addChild(Node node) {
+        if (childs == null)
+            childs = new ArrayList<>();
+        childs.add(node);
+    }
+
+    /* ========================= Compute / Evaluate ========================== */
+
+    public void compute(InOut io) {
+        if (isInput()) {
+            outs.add(io.in.get(id));
+            return;
+        }
+
+        if (!isComputeWithParent()) {
+            throw new RuntimeException("Missing parent(s) for compute node id=" + id + " op=" + op);
+        }
+
+        // Récup des sorties parents
+        Node na = parentA();
+        Node nb = parentB();
+        if (na.outs == null) {
+            throw new RuntimeException("Empty outs ! this:" + this + " a:" + na + "b:" + nb);
+        }
+        Value a = safeLastOut(parentA(), "A");
+        Value b = op.isUnary() ? null : safeLastOut(parentB(), "B");
+
+        if (op.isUnary()) {
+            switch (op) {
+                case SQRT -> outs.add(a.sqrt());
+                case ABS -> outs.add(a.abs());
+                default -> throw new RuntimeException("Unary op not supported op:" + op + " a:" + a + " b:" + b);
+            }
+        } else if (a.bothBool(b)) {
+            switch (op) {
+                case AND -> outs.add(a.and(b));
+                case OR -> outs.add(a.or(b));
+                case XOR -> outs.add(a.xor(b));
+                default -> throw new RuntimeException("Bool op not supported op:" + op + " a:" + a + " b:" + b);
+            }
+        } else if (a.bothInt(b)) {
+            switch (op) {
+                case ADD -> outs.add(a.add(b));
+                case MINUS -> outs.add(a.minus(b));
+                case MULT -> outs.add(a.mult(b));
+                case MORE_THAN -> outs.add(a.sup(b));
+                case ALT -> outs.add(a.alternative(b));
+                case HYPOT -> outs.add(a.hypot(b));
+                case MIN -> outs.add(a.min(b));
+                default -> throw new RuntimeException("Binary op not supported op:" + op + " a:" + a + " b:" + b);
+            }
+        } else {
+            if (na.op.isOutputTypeBoolean() && nb.op.isOutputTypeMath()) {
+                outs.add(boolIntInteraction(a, b));
+            } else {
+                outs.add(boolIntInteraction(b, a));
+            }
+        }
+    }
+
+    private Value safeLastOut(Node p, String label) {
+        if (p == null || p.outs == null)
+            throw new RuntimeException("Parent " + label + " issue !!! (null outs) node=" + id);
+        return p.lastOut();
+    }
+
+    private Value boolIntInteraction(Value a, Value b) {
+        return a.isBool() && a.bool ? b : new Value();
+    }
+
+    public void evaluate(List<InOut> map) {
+        if (!isComputeWithParent())
+            return;
+
+        Value out, exp, lout = new Value(), lexp = new Value();
+        for (int i = 0; i < outs.size(); i++) {
+            out = outs.get(i);
+            exp = map.get(i).out;
+            evals.add(EvaluationStaticService.eval(out, exp, out.minus(lout), exp.minus(lexp)));
+            lout = out;
+            lexp = exp;
+        }
+        avgEval = calcAverage(evals);
+    }
+
+    public static double calcAverage(List<Short> numbers) {
+        if (numbers == null || numbers.isEmpty())
+            return 0.0;
+        return numbers.stream().mapToInt(Short::shortValue).average().orElse(0.0);
+    }
+
+    /*
+     * ========================= Propagation & GC logique ==========================
+     */
+
+    public void backProp() {
+        if (!isComputeWithParent())
+            return;
+        for (Node p : parents) {
+            if (p != null && p.isComputeWithParent()) {
+                if (p.avgEval < this.avgEval) {
+                    p.avgEval = this.avgEval; // credit aux parents
+                    p.backProp();
+                }
+            }
+        }
+    }
+
+    public void forwardProp() {
+        if (!isComputeWithParent())
+            return;
+        for (Node p : parents) {
+            if (p != null && p.isComputeWithParent() && p.avgEval > avgEval) {
+                // parent meilleur → ce node devient redondant
+                prepareForDelete(11.11);
+                break;
+            }
+        }
+    }
+
+    public void removeDuplicates(List<Node> nodes) {
+        if (!isComputeWithParent() || avgEval <= 0.0 || avgEval >= 100.0)
+            return;
+
+        for (int i = id + 1; i < nodes.size(); i++) {
+            Node n = nodes.get(i);
+            if (n.id != i)
+                throw new RuntimeException("GET(i) KO !!");
+            if (n.outs != null && n.isComputeWithParent() && n.avgEval == avgEval) {
+                int j = 0;
+                while (j < n.outs.size() && outs.get(j).equals(n.outs.get(j)))
+                    j++;
+                if (j >= n.outs.size()) {
+                    connectChildToGrandParentAndClean(n);
+                }
+            }
+        }
+    }
+
+    private void connectChildToGrandParentAndClean(Node redundant) {
+        // rattache ses enfants à "this"
+        if (redundant.childs != null) {
+            for (Node c : redundant.childs) {
+                replaceParent(c, redundant, this);
+                this.addChild(c);
+            }
+        }
+        // coupe le redundant
+        if (this.childs != null)
+            this.childs.remove(redundant);
+        redundant.childs = null; // ignore ses enfants désormais
+        redundant.prepareForDelete(33.33);
+    }
+
+    private static void replaceParent(Node child, Node oldP, Node newP) {
+        if (child.parents == null)
+            return;
+        for (int i = 0; i < child.parents.size(); i++) {
+            if (child.parents.get(i) == oldP) {
+                child.parents.set(i, newP);
+            }
+        }
+    }
+
+    public void cleanUp(double min) {
+        Node matchingParentNode = getEqualParentIfPresent();
+        if (matchingParentNode != null) {
+            mapChildToGrandParentThenDelete(matchingParentNode);
+            // connectChildToGrandParentAndClean(this);
+        } else if (isComputeWithParent() && avgEval < min) {
+            prepareForDelete(44.44);
+        }
+    }
+
+    private void mapChildToGrandParentThenDelete(Node matchingParentNode) {
+        this.childs.forEach(c -> {
+            if (c.parents != null && !c.parents.isEmpty()) {
+                if (!c.parents.contains(this))
+                    throw new RuntimeException("Child not connected !");
+                c.parents.set(c.parents.indexOf(this), matchingParentNode);
+                matchingParentNode.addChild(c);
+            }
+        });
+        this.parents.clear();
+        this.childs.clear();
+        this.avgEval = -55.55;
+    }
+
+    private void prepareForDelete(double og) {
+        removeChilds(og);
+        childs = null;
+    }
+
+    private void removeChilds(double og) {
+        avgEval = og;
+        if (parents != null) {
+            parents.clear();
+            parents = null;
+        }
+        outs = null;
+        evals = null;
+        if (childs != null)
+            childs.forEach(n -> n.removeChilds(22.22));
+    }
+
+    public void reset() {
+        // Reset outs pour la prochaine simulation
+        if (outs == null)
+            outs = new ArrayList<>();
+        else
+            outs.clear();
+
+        if (evals == null)
+            evals = new ArrayList<>();
+        else
+            evals.clear();
+    }
+
+    /* ========================= Introspection / JSON ========================== */
+
+    @Override
+    public String toString() {
+        String nodeSrcAndOp = "---";
+        if (!isInput() && hasAllRequiredParents()) {
+            char chOp = op.getSymbol();
+            String ida = toStrId(parentA());
+            String idb = op.isUnary() ? "N" : toStrId(parentB());
+            nodeSrcAndOp = ida + chOp + idb;
+        }
+        String outss = "---";
+        if (outs != null && outs.size() >= 2) {
+            outss = outs.get(outs.size() - 2) + " " + lastOut();
+        } else if (outs != null && outs.size() == 1) {
+            outss = lastOut().toString();
+        }
+        String strEval = avgEval == VALUE_FOUND ? ">> " + avgEval + " <<" : "" + avgEval;
+
+        return !MSG_INFO && isCompute() && !hasAllRequiredParents() ? "_"
+                : id + "[" + nodeSrcAndOp + "|" + outss + "|" + strEval + "]";
+    }
+
+    public static String toStrId(Node n) {
+        if (n == null)
+            return "N";
+        return n.id < NB_INPUT ? "" + STR_ABCD.charAt(n.id) : Integer.toString(n.id);
+    }
+
+    public Value lastOut() {
+        if (outs == null || outs.isEmpty())
+            return new Value();
+        return outs.get(outs.size() - 1);
+    }
+
     public double getAvgEval() {
         return avgEval;
     }
 
     public void collectAncestors(java.util.Set<Node> acc) {
-        if (nodeA != null && acc.add(nodeA))
-            nodeA.collectAncestors(acc);
-        if (nodeB != null && acc.add(nodeB))
-            nodeB.collectAncestors(acc);
+        if (parents == null)
+            return;
+        for (Node p : parents) {
+            if (p != null && acc.add(p))
+                p.collectAncestors(acc);
+        }
     }
 
     public String toJsonString() {
@@ -315,73 +454,72 @@ public class Node {
         m.put("id", this.id);
         m.put("kind", isInput() ? "input" : "op");
 
-        // name pour inputs A/B/C/D si utile
         if (isInput()) {
-            // adapte si tu as déjà un champ name; sinon calcule-le
             m.put("name", toStrId(this));
         } else {
-            // expr lisible (ex: "B a A") ou raw (ex: "BaA") – ajuste selon tes champs
             char chOp = op.getSymbol();
+            boolean onlyA = op.isUnary();
             m.put("op", chOp);
-            Boolean onlyA = op.isUnary();
             m.put("onlyA", onlyA);
+
+            String label;
             if (onlyA) {
-                m.put("label", chOp + " " + Node.toStrId(nodeA));
+                label = chOp + " " + toStrId(parentA());
             } else {
-                m.put("label", Node.toStrId(nodeA) + " " + chOp + " " + Node.toStrId(nodeB));
+                label = toStrId(parentA()) + " " + chOp + " " + toStrId(parentB());
             }
+            m.put("label", label);
+            m.put("parents", getParentIds());
+            m.put("matchParent", isEqualParent());
 
-            // Parents → IDs seulement (évite les cycles)
-            List<Integer> parents = new ArrayList<>();
-            boolean eqParent = false;
-
-            if (this.nodeA != null) {
-                parents.add(this.nodeA.id);
-                // Comparaison des outs
-                if (outsEqual(this.nodeA.outs, this.outs)) {
-                    eqParent = true;
-                }
-            }
-            if (this.nodeB != null && !onlyA) {
-                parents.add(this.nodeB.id);
-                // Comparaison des outs
-                if (outsEqual(this.nodeB.outs, this.outs)) {
-                    eqParent = true;
-                }
-            }
-
-            m.put("parents", parents);
-            m.put("matchParent", eqParent);
-
-            // is constant ? toutes les sorties sont identiques
             m.put("constant", isConstantOuts());
-            if (isConstantOuts()) {
+            if (isConstantOuts())
                 m.put("constantValue", String.valueOf(this.outs.get(0)));
-            }
 
-            // tag "asChildren" (a-t-il au moins un enfant effectif ?) ---
-            m.put("asChildren", this.hasEffectiveChildren());
+            m.put("asChildren", hasEffectiveChildren());
         }
 
-        // outputs → les dernières valeurs en texte
         m.put("outputs", getLastXoutputsAsStrings(5));
-
         return m;
+    }
+
+    private List<Integer> getParentIds() {
+        List<Integer> pids = new ArrayList<>();
+        if (parentA() != null) {
+            pids.add(parentA().id);
+        }
+        if (!op.isUnary() && parentB() != null) {
+            pids.add(parentB().id);
+        }
+        return pids;
+    }
+
+    private boolean isEqualParent() {
+        return getEqualParentIfPresent() != null;
+    }
+
+    private Node getEqualParentIfPresent() {
+        if (parentA() != null) {
+            if (outsEqual(parentA().outs, this.outs))
+                return parentA();
+        }
+        if (!op.isUnary() && parentB() != null) {
+            if (outsEqual(parentB().outs, this.outs))
+                return parentB();
+        }
+        return null;
     }
 
     private List<String> getLastXoutputsAsStrings(int x) {
         if (this.outs == null || this.outs.isEmpty())
             return List.of();
         int n = this.outs.size();
-
         List<String> out = new ArrayList<>();
-        for (int i = n - x; i < n; i++) {
-            out.add(this.outs.get(Math.max(0, i)).toString());
-        }
+        for (int i = Math.max(0, n - x); i < n; i++)
+            out.add(this.outs.get(i).toString());
         return out;
     }
 
-    /** Compare deux listes de Value élément par élément. */
     private static boolean outsEqual(List<Value> p, List<Value> c) {
         if (p == c)
             return true;
@@ -396,11 +534,6 @@ public class Node {
         return true;
     }
 
-    /**
-     * Égalité robuste pour une Value (null-safe).
-     * Si Value.equals(...) est bien défini chez toi, il sera utilisé.
-     * Sinon on retombe sur toString() pour éviter les surprises (true/N/num).
-     */
     private static boolean valueEquals(Value a, Value b) {
         if (a == b)
             return true;
@@ -411,20 +544,15 @@ public class Node {
         return String.valueOf(a).equals(String.valueOf(b));
     }
 
-    /**
-     * Noeud constant = toutes les valeurs out identiques (y compris 1 seul
-     * élément).
-     */
     private boolean isConstantOuts() {
         if (this.outs == null || this.outs.isEmpty())
             return false;
         return allOutsEqual(this.outs);
     }
 
-    /** Toutes les sorties sont-elles identiques ? (liste vide -> false) */
     private static boolean allOutsEqual(List<Value> outs) {
         if (outs == null || outs.isEmpty())
-            return false; // à toi de voir si 0 élément = constant
+            return false;
         Value first = outs.get(0);
         for (int i = 1; i < outs.size(); i++) {
             if (!valueEquals(first, outs.get(i)))
@@ -434,30 +562,26 @@ public class Node {
     }
 
     public boolean hasEffectiveChildren() {
-        boolean retour = false;
-        for (Node child : this.childs)
-            if (child.nodeA != null && child.nodeA.id == id || child.nodeB != null && child.nodeB.id == id) {
-                retour = true;
+        if (this.childs == null)
+            return false;
+        for (Node child : this.childs) {
+            if (child != null && child.parents != null && child.parents.contains(this)) {
+                return true;
             }
-        return retour;
+        }
+        return false;
     }
 
-    /**
-     * Top-K valeurs les plus fréquentes dans une liste de Value
-     * Null-safe, garde l'ordre d'apparition pour départager les ex-aequo.
-     *
-     * @param values
-     * @param k
-     * @return
-     */
+    /* ========================= Meta ========================== */
+
+    public java.util.List<String> mostCommonOuts(int k) {
+        return mostCommon(this.outs, k);
+    }
+
     private static List<String> mostCommon(List<Value> values, int k) {
-        if (values == null || values.isEmpty() || k <= 0) {
+        if (values == null || values.isEmpty() || k <= 0)
             return java.util.Collections.emptyList();
-        }
-
-        // value -> [count, firstIndex]
         java.util.Map<String, int[]> freq = new java.util.LinkedHashMap<>();
-
         for (int i = 0; i < values.size(); i++) {
             String key = String.valueOf(values.get(i)).trim();
             int[] slot = freq.get(key);
@@ -465,29 +589,18 @@ public class Node {
                 slot = new int[] { 0, i };
                 freq.put(key, slot);
             }
-            slot[0]++; // +1 occurrence
+            slot[0]++;
         }
-
-        // Trie: count desc, puis firstIndex asc
         java.util.List<java.util.Map.Entry<String, int[]>> entries = new java.util.ArrayList<>(freq.entrySet());
-
         entries.sort((e1, e2) -> {
-            int c = Integer.compare(e2.getValue()[0], e1.getValue()[0]); // count desc
+            int c = Integer.compare(e2.getValue()[0], e1.getValue()[0]);
             if (c != 0)
                 return c;
-            return Integer.compare(e1.getValue()[1], e2.getValue()[1]); // firstIndex asc
+            return Integer.compare(e1.getValue()[1], e2.getValue()[1]);
         });
-
         java.util.List<String> top = new java.util.ArrayList<>(Math.min(k, entries.size()));
-        for (int i = 0; i < entries.size() && i < k; i++) {
+        for (int i = 0; i < entries.size() && i < k; i++)
             top.add(entries.get(i).getKey());
-        }
         return top;
     }
-
-    // Expose côté instance (solution.mostCommonOuts(5) pour la méta)
-    public java.util.List<String> mostCommonOuts(int k) {
-        return mostCommon(this.outs, k);
-    }
-
-}// End of Node
+}

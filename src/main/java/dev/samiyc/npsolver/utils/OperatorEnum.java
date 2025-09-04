@@ -14,12 +14,18 @@ public enum OperatorEnum {
 
     SQRT('#', Type.MATH, Type.MATH, 1),
     ABS('a', Type.MATH, Type.MATH, 1),
-
+    
+    ALT(':', Type.MATH, Type.MATH, 2),
     MORE_THAN('>', Type.MATH, Type.BOOLEAN, 2),
-    ALT(':', Type.BOTH, Type.BOOLEAN, 2),
+    BOOL_INT('?', Type.BOTH, Type.MATH, 2),
+    
+    // INVERTED('§', Type.BOOLEAN, Type.BOOLEAN, 1),
+    AND('&', Type.BOOLEAN, Type.BOOLEAN, 2),
+    OR('/', Type.BOOLEAN, Type.BOOLEAN, 2),
+    XOR('!', Type.BOOLEAN, Type.BOOLEAN, 2),
 
-    INPUT(' ', Type.NA, Type.MATH, 1),
-    NOOP(' ', Type.NA, Type.MATH, 1);
+    INPUT('¤', Type.NA, Type.MATH, 1),
+    NOOP('~', Type.NA, Type.NA, 0);
 
     private static final java.util.Random RNG = new java.util.Random();
 
@@ -28,10 +34,10 @@ public enum OperatorEnum {
         MATH, BOOLEAN, BOTH, NA
     }
 
-    private final char symbol;
-    private final Type inputType;
-    private final Type outputType;
-    private final int nbInput;
+    public final char symbol;
+    public final Type inputType;
+    public final Type outputType;
+    public final int nbInput;
 
     OperatorEnum(char symbol, Type inputType, Type outputType, int nbInput) {
         this.symbol = symbol;
@@ -44,16 +50,8 @@ public enum OperatorEnum {
         return symbol;
     }
 
-    public Type getInputType() {
-        return inputType;
-    }
-
     public int getNbInput() {
         return nbInput;
-    }
-
-    public boolean isBoolean() {
-        return inputType == Type.BOOLEAN;
     }
 
     public boolean isUnary() {

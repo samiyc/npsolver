@@ -103,7 +103,7 @@ public class MainStaticService {
     public static void cleanUp(List<Node> nodes, int maxId, int count) {
         double noiseLimit = count % NOISE_SPIKE_CYCLE == 0 ? NOISE_SPIKE_HIGH : NOISE_LIMIT;
         nodes.forEach(n -> n.cleanUp(noiseLimit));
-        nodes.removeIf(n -> n.isCompute() && !n.asParent());
+        nodes.removeIf(n -> n.isCompute() && !n.hasAllRequiredParents());
         nodes.forEach(Node::reset);
         for (int i = 0; i < maxId; i++) {
             if (i < nodes.size()) {

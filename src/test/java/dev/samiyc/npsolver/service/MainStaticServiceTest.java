@@ -36,16 +36,31 @@ class MainStaticServiceTest {
         Node n = new Node(nodes, 2, 0);
         n.avgEval = 0.1;
         nodes.add(n);
-        Assertions.assertNotNull(n.nodeA);
-        Assertions.assertNotNull(n.nodeB);
+        Assertions.assertNotNull(n.parents.get(0));
+        Assertions.assertTrue(n.op.isUnary() || n.parentB() != null);
+        
+        //CLEAN UP
         MainStaticService.cleanUp(nodes, 3, 10);
-        Assertions.assertNull(n.nodeA);
-        Assertions.assertNull(n.nodeB);
+
+        //Disconnected node
+        Assertions.assertNull(n.parentA());
+        Assertions.assertNull(n.parentB());
         Assertions.assertEquals(44.44, n.avgEval);
-        Assertions.assertEquals(0, nodes.get(0).lastOut().number);
-        Assertions.assertEquals(0, nodes.get(1).lastOut().number);
-        Node nn = nodes.get(2);
-        Assertions.assertNotEquals(n, nn);
+
+        Node na = nodes.get(0);
+        Node nb = nodes.get(1);
+        Node newnode = nodes.get(2);
+
+        //Reset des inputs
+        Assertions.assertEquals(0, na.lastOut().number);
+        Assertions.assertEquals(0, nb.lastOut().number);
+        Assertions.assertEquals(OperatorEnum.INPUT, na.op);
+        Assertions.assertEquals(OperatorEnum.INPUT, nb.op);
+        
+        //delete + new calc node
+        Assertions.assertEquals(3, nodes.size());
+        Assertions.assertNotEquals(n, newnode);
+        Assertions.assertNotEquals(OperatorEnum.INPUT, newnode.op);
     }
 
     @Test
@@ -55,8 +70,8 @@ class MainStaticServiceTest {
         n.avgEval = 50;
         nodes.add(n);
         MainStaticService.cleanUp(nodes, 3, 10);
-        Assertions.assertEquals(nodes.get(0), n.nodeA);
-        Assertions.assertEquals(nodes.get(1), n.nodeB);
+        Assertions.assertTrue(nodes.contains(n.parentA()));
+        Assertions.assertTrue(n.op.isUnary() || nodes.contains(n.parentB()));
         Assertions.assertEquals(n, nodes.get(2));
     }
 

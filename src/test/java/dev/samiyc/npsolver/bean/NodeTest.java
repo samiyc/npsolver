@@ -92,8 +92,7 @@ public class NodeTest {
 
     private static Node createNodeAndCompute(List<Node> nodes, OperatorEnum op) {
         Node node = new Node(nodes, 2, 0);
-        node.nodeA = nodes.getFirst();
-        node.nodeB = nodes.getLast();
+        node.parents = nodes;
         node.op = op;
         node.compute(null);
         return node;
@@ -121,8 +120,7 @@ public class NodeTest {
         nodes.add(new Node(0));
         nodes.add(new Node(1));
         Node thrdNod = new Node(nodes, 2, 0);
-        thrdNod.nodeA = nodes.getFirst();
-        thrdNod.nodeB = nodes.getLast();
+        thrdNod.parents = nodes;
         thrdNod.op = OperatorEnum.ADD;
         nodes.add(thrdNod);
 
@@ -155,8 +153,7 @@ public class NodeTest {
         nodes.add(new Node(0));
         nodes.add(new Node(1));
         Node thrdNod = new Node(nodes, 2, 0);
-        thrdNod.nodeA = nodes.getFirst();
-        thrdNod.nodeB = nodes.getLast();
+        thrdNod.parents = nodes;
         thrdNod.op = OperatorEnum.MINUS;
         nodes.add(thrdNod);
 
@@ -237,10 +234,12 @@ public class NodeTest {
         customNode.outs = new ArrayList<>();
         customNode.evals = new ArrayList<>();
         customNode.childs = new ArrayList<>();
-        customNode.nodeA = nodes.get(ida);
-        customNode.nodeB = nodes.get(idb);
-        customNode.nodeA.addChild(customNode);
-        customNode.nodeB.addChild(customNode);
+        Node nodeA = nodes.get(ida);
+        Node nodeB = nodes.get(idb);
+        customNode.parents.add(nodeA);
+        customNode.parents.add(nodeB);
+        nodeA.addChild(customNode);
+        nodeB.addChild(customNode);
         customNode.op = op;
         customNode.avgEval = avgEval;
         nodes.add(customNode);
@@ -264,8 +263,8 @@ public class NodeTest {
         Assertions.assertEquals(21.0, thrdNod.avgEval);
         // Node 4
         Assertions.assertFalse(frthNod.isComputeWithParent());
-        Assertions.assertNull(frthNod.nodeA);
-        Assertions.assertNull(frthNod.nodeB);
+        Assertions.assertNull(frthNod.parentA());
+        Assertions.assertNull(frthNod.parentB());
         Assertions.assertNull(frthNod.outs);
         Assertions.assertNull(frthNod.evals);
         Assertions.assertNull(frthNod.childs);
@@ -289,8 +288,8 @@ public class NodeTest {
         // Node 4
         Assertions.assertTrue(frthNod.isComputeWithParent());
         Assertions.assertEquals(21.0, frthNod.avgEval);
-        Assertions.assertNotNull(frthNod.nodeA);
-        Assertions.assertNotNull(frthNod.nodeB);
+        Assertions.assertNotNull(frthNod.parentA());
+        Assertions.assertNotNull(frthNod.parentB());
         Assertions.assertNotNull(frthNod.outs);
         Assertions.assertNotNull(frthNod.evals);
         Assertions.assertNotNull(frthNod.childs);
@@ -338,15 +337,15 @@ public class NodeTest {
         // Node B
         Assertions.assertFalse(nodes.contains(nodeB));
         Assertions.assertFalse(nodeB.isComputeWithParent());
-        Assertions.assertNull(nodeB.nodeA);
-        Assertions.assertNull(nodeB.nodeB);
+        Assertions.assertNull(nodeB.parentA());
+        Assertions.assertNull(nodeB.parentB());
         Assertions.assertNull(nodeB.outs);
         Assertions.assertNull(nodeB.evals);
         Assertions.assertNull(nodeB.childs);
         // Node C
         Assertions.assertTrue(nodeC.isComputeWithParent());
-        Assertions.assertEquals(0, nodeC.nodeA.id);
-        Assertions.assertEquals(4, nodeC.nodeB.id);
+        Assertions.assertEquals(0, nodeC.parentA().id);
+        Assertions.assertEquals(4, nodeC.parentB().id);
     }
 
     @Test

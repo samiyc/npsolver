@@ -24,7 +24,7 @@ public final class NodePrinter {
     private NodePrinter() {
     }
 
-    public static void printLatestSolutionWithDependencies(List<Node> nodes) {
+    public static void printLatestSolutionWithDependencies(List<Node> nodes, int testId) {
         Optional<Node> latest = nodes.stream()
                 .filter(n -> n.getAvgEval() == 100.0)
                 .max(Comparator.comparingInt(n -> n.id));
@@ -44,7 +44,7 @@ public final class NodePrinter {
                     .sorted(Comparator.comparingInt(n -> n.id))
                     .collect(Collectors.toList());
 
-            System.out.println("-- Node Tree Solution --");
+            System.out.println("-- Node Tree Solution - Test " + testId + " ---");
             System.out.println(metaString(nodes, sol)); // Ligne meta
 
             // Impression NDJSON (utilise toJsonString() qui lit toJsonDto())

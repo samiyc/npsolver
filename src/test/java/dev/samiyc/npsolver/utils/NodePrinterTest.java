@@ -32,7 +32,7 @@ public class NodePrinterTest {
         PrintStream old = System.out;
         System.setOut(new PrintStream(bout));
         try {
-            NodePrinter.printLatestSolutionWithDependencies(nodes);
+            NodePrinter.printLatestSolutionWithDependencies(nodes, problemId);
         } finally {
             System.setOut(old);
         }
