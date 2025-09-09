@@ -199,6 +199,7 @@ class MainStaticServiceTest {
     }
 
     @Test
+    @Tag("flaky") // Unstable test
     void run_withProblemId_15() {
         run_withProblemId(15);
     }

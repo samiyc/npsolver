@@ -27,13 +27,13 @@ public class InOut {
 
     public Value calcOut(int problemId) {
         int a = in.get(0).number;
-        int b = in.get(1).number;
-        int c = in.get(2).number;
-        int d = in.get(3).number;
+        int b = NB_INPUT >= 2 ? in.get(1).number : 0;
+        int c = NB_INPUT >= 3 ? in.get(2).number : 0;
+        int d = NB_INPUT >= 4 ? in.get(3).number : 0;
         Value rtn = new Value();
 
         //TEST OK !!!
-        if (problemId == 1) rtn = new Value(20);
+        if (problemId == 1) rtn = new Value(5);
         else if (problemId == 2) rtn = new Value(a > 0);
         else if (problemId == 3) rtn = new Value(a >= 0);
         else if (problemId == 4) rtn = new Value(a + b);
@@ -41,14 +41,14 @@ public class InOut {
         else if (problemId == 6) rtn = new Value(a < b && c > d);
         else if (problemId == 7) rtn = new Value(Math.abs(a));
         else if (problemId == 8) rtn = new Value(Math.min(a, b));
-        else if (problemId == 9) rtn = new Value((int) Math.sqrt(a + b));
-        else if (problemId == 10) rtn = new Value((int) Math.sqrt(Math.pow(a - c, 2) + Math.pow(b - d, 2)));
+        else if (problemId == 9) rtn = new Value((int) Math.sqrt(Math.pow(a - c, 2) + Math.pow(b - d, 2)));
+        else if (problemId == 10) rtn = new Value((int) Math.hypot(a, b) * (int) Math.hypot(c, d) + 1);
         else if (problemId == 11) rtn = new Value(a * a - d * d);
         else if (problemId == 12) rtn = new Value(a > b != c > d);
         else if (problemId == 13) rtn = new Value(a * a * a * a);
-        else if (problemId == 14) rtn = a > b && a > c && c > d ? new Value(a) : new Value(false);
-
+        
         //TEST KO !!!
+        else if (problemId == 14) rtn = a > b && a > c && c > d ? new Value(a) : new Value(false);
         else if (problemId == 15) rtn = new Value(a < b ? c : d);
         else if (problemId == 16) rtn = new Value(a < b ? d * d : b + c);
         else if (problemId == 17) rtn = new Value(a * a - b * b + c - d);
@@ -78,7 +78,9 @@ public class InOut {
             }
         }
 
-        for (int j = map.size(); j < nbIOEntry; j++) map.add(new InOut(nbInputs, problemId, count));
+        for (int j = map.size(); j < nbIOEntry; j++) {
+            map.add(new InOut(nbInputs, problemId, count));
+        }
         if (MSG_INFO) {
             System.out.println("\n### THE MAP - nbTest:" + map.size());
             System.out.println(map);

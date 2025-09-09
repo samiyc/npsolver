@@ -1,5 +1,7 @@
 package dev.samiyc.npsolver.bean;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -192,15 +194,11 @@ class ValueTest {
 
     @Test
     void sqrt_withBool_expEmpty() {
-        Value out;
         Value a = new Value(false);
-        Value b = new Value(true);
-        // sqrt(a) => Empty
-        out = a.sqrt();
-        Assertions.assertTrue(out.isEmpty());
-        // sqrt(b) => Empty
-        out = b.sqrt();
-        Assertions.assertTrue(out.isEmpty());
+        RuntimeException thrown = assertThrows(
+                RuntimeException.class, () -> a.sqrt(),
+                "Expected 'SQRT WITH BOOL' error to be thrown, but it didn't");
+        Assertions.assertTrue(thrown.getMessage().contains("SQRT WITH BOOL"));
     }
 
     @Test
@@ -225,15 +223,11 @@ class ValueTest {
 
     @Test
     void abs_withBool_expEmpty() {
-        Value out;
         Value a = new Value(false);
-        Value b = new Value(true);
-        // abs(a) => Empty
-        out = a.abs();
-        Assertions.assertTrue(out.isEmpty());
-        // abs(b) => Empty
-        out = b.abs();
-        Assertions.assertTrue(out.isEmpty());
+        RuntimeException thrown = assertThrows(
+                RuntimeException.class, () -> a.abs(),
+                "Expected 'ABS WITH BOOL' error to be thrown, but it didn't");
+        Assertions.assertTrue(thrown.getMessage().contains("ABS WITH BOOL"));
     }
 
     @Test

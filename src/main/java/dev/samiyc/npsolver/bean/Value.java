@@ -50,11 +50,13 @@ public class Value {
 
     public Value sqrt() {
         if (isInt()) return new Value((int) Math.sqrt(number));
+        if (isBool()) error(this, "SQRT WITH BOOL");
         return new Value();
     }
 
     public Value abs() {
         if (isInt()) return new Value(Math.abs(number));
+        if (isBool()) error(this, "ABS WITH BOOL");
         return new Value();
     }
     public Value min(Value other) {
@@ -68,6 +70,12 @@ public class Value {
         return this;
     }
 
+    public Value boolIntInteraction(Value other) {
+        if (isBool() && bool && other.isInt()) return new Value(other.number);
+        if (other.isBool() && other.bool && isInt()) return new Value(number);
+        return new Value();
+    }
+
     public Value minus(Value other) {
         if (bothInt(other)) return new Value(number - other.number);
         if (bothBool(other)) return new Value(!bool.equals(other.bool));
@@ -75,18 +83,25 @@ public class Value {
     }
 
     public Value and(Value other) {
-        if (!bothBool(other)) error(other, "AND with math val");
-        return new Value(bool && other.bool);
+        if (bothBool(other)) return new Value(bool && other.bool);
+        return new Value();
     }
 
     public Value or(Value other) {
-        if (!bothBool(other)) error(other, "OR with math val");
-        return new Value(bool || other.bool);
+        if (bothBool(other)) return new Value(bool || other.bool);
+        if (other.isBool()) return other;
+        return this;
     }
 
     public Value xor(Value other) {
-        if (!bothBool(other)) error(other, "XOR with math val");
-        return new Value(!bool.equals(other.bool));
+        if (bothBool(other)) return new Value(!bool.equals(other.bool));
+        return new Value();
+    }
+
+    public Value not() {
+        if (isBool()) return new Value(!bool);
+        if (isInt()) error(this, "NOT with math val");
+        return new Value();
     }
 
     private void error(Value other, String msg) {

@@ -19,7 +19,7 @@ public enum OperatorEnum {
     SQRT('#', Type.MATH, Type.MATH, 1),
     ABS('a', Type.MATH, Type.MATH, 1),
 
-    ALT(':', Type.MATH, Type.MATH, 2),
+    ALT(':', Type.BOTH, Type.MATH, 2),
     MORE_THAN('>', Type.MATH, Type.BOOLEAN, 2),
     BOOL_INT('?', Type.BOTH, Type.MATH, 2),
 
@@ -27,6 +27,7 @@ public enum OperatorEnum {
     AND('&', Type.BOOLEAN, Type.BOOLEAN, 2),
     OR('§', Type.BOOLEAN, Type.BOOLEAN, 2),
     XOR('!', Type.BOOLEAN, Type.BOOLEAN, 2),
+    NOT('£', Type.BOOLEAN, Type.BOOLEAN, 1),
 
     INPUT('¤', Type.NA, Type.MATH, 1),
     NOOP('~', Type.NA, Type.NA, 0);

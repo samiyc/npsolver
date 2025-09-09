@@ -204,37 +204,23 @@ public class Node {
         Value a = safeLastOut(parentA(), "A");
         Value b = op.isUnary() ? null : safeLastOut(parentB(), "B");
 
-        if (op.isUnary()) {
-            switch (op) {
-                case SQRT -> outs.add(a.sqrt());
-                case ABS -> outs.add(a.abs());
-                default -> throw new RuntimeException("Unary op not supported op:" + op + " a:" + a + " b:" + b);
-            }
-        } else if (a.bothBool(b)) {
-            switch (op) {
-                case AND -> outs.add(a.and(b));
-                case OR -> outs.add(a.or(b));
-                case XOR -> outs.add(a.xor(b));
-                default -> throw new RuntimeException("Bool op not supported op:" + op + " a:" + a + " b:" + b);
-            }
-        } else if (a.bothInt(b)) {
-            switch (op) {
-                case ADD -> outs.add(a.add(b));
-                case MINUS -> outs.add(a.minus(b));
-                case MULT -> outs.add(a.mult(b));
-                case DIV -> outs.add(a.div(b));
-                case MORE_THAN -> outs.add(a.sup(b));
-                case ALT -> outs.add(a.alternative(b));
-                case HYPOT -> outs.add(a.hypot(b));
-                case MIN -> outs.add(a.min(b));
-                default -> throw new RuntimeException("Binary op not supported op:" + op + " a:" + a + " b:" + b);
-            }
-        } else {
-            if (a.isBool() && b.isInt()) {
-                outs.add(boolIntInteraction(a, b));
-            } else {
-                outs.add(boolIntInteraction(b, a));
-            }
+        switch (op) {
+            case SQRT -> outs.add(a.sqrt());
+            case ABS -> outs.add(a.abs());
+            case NOT -> outs.add(a.not());
+            case AND -> outs.add(a.and(b));
+            case OR -> outs.add(a.or(b));
+            case XOR -> outs.add(a.xor(b));
+            case ADD -> outs.add(a.add(b));
+            case MINUS -> outs.add(a.minus(b));
+            case MULT -> outs.add(a.mult(b));
+            case DIV -> outs.add(a.div(b));
+            case MORE_THAN -> outs.add(a.sup(b));
+            case HYPOT -> outs.add(a.hypot(b));
+            case MIN -> outs.add(a.min(b));
+            case ALT -> outs.add(a.alternative(b));
+            case BOOL_INT -> outs.add(a.boolIntInteraction(b));
+            default -> throw new RuntimeException("OP not supported op:" + op + " a:" + a + " b:" + b);
         }
     }
 
@@ -242,10 +228,6 @@ public class Node {
         if (p == null || p.outs == null)
             throw new RuntimeException("Parent " + label + " issue !!! (null outs) node=" + id);
         return p.lastOut();
-    }
-
-    private Value boolIntInteraction(Value a, Value b) {
-        return a.isBool() && a.bool ? b : new Value();
     }
 
     public void evaluate(List<InOut> map) {

@@ -9,7 +9,7 @@ import dev.samiyc.npsolver.utils.NodePrinter;
 public class Application {
 
     public static void main(String[] args) {
-        int testId = 14;
+        int testId = 1;
         List<Node> nodes = MainStaticService.run(testId);
         NodePrinter.printLatestSolutionWithDependencies(nodes, testId);
     }

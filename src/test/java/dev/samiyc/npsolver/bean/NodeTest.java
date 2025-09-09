@@ -33,38 +33,54 @@ public class NodeTest {
     }
 
     @Test
-    void compute_HighOp_IntBool_expInt() {
-        List<Node> nodes = initInputNode(new Value(23), new Value(true));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
-        Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
-    }
-
-    @Test
-    void compute_HighOp_BoolInt_expInt() {
-        List<Node> nodes = initInputNode(new Value(true), new Value(23));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
-        Assertions.assertEquals(nodes.getLast().lastOut(), node.lastOut());
-    }
-
-    @Test
-    void compute_HighOp_BoolInt_expEmpty() {
+    void compute_abs_expError_absWithBool() {
         List<Node> nodes = initInputNode(new Value(false), new Value(23));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.ABS);
-        Assertions.assertTrue(node.lastOut().isEmpty());
+        RuntimeException thrown = assertThrows(
+                RuntimeException.class, () -> createNodeAndCompute(nodes, OperatorEnum.ABS),
+                "Expected 'ABS WITH BOOL' error to be thrown, but it didn't");
+        Assertions.assertTrue(thrown.getMessage().contains("ABS WITH BOOL"));
     }
 
     @Test
-    void compute_LowOp_IntBool_expInt() {
+    void compute_IntBool_withTrue_expInt() {
         List<Node> nodes = initInputNode(new Value(-11), new Value(true));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.BOOL_INT);
         Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
     }
 
     @Test
-    void compute_LowOp_BoolInt_expEmpty() {
+    void compute_alt_withTrue_expInt() {
+        List<Node> nodes = initInputNode(new Value(-11), new Value(true));
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ALT);
+        Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
+    }
+
+    @Test
+    void compute_IntBool2_withFalse_expEmpty() {
         List<Node> nodes = initInputNode(new Value(-11), new Value(false));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.BOOL_INT);
         Assertions.assertTrue(node.lastOut().isEmpty());
+    }
+
+    @Test
+    void compute_alt2_withFalse_expInt() {
+        List<Node> nodes = initInputNode(new Value(-11), new Value(false));
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ALT);
+        Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
+    }
+
+    @Test
+    void compute_IntBool3_withFalseFirst_expEmpty() {
+        List<Node> nodes = initInputNode(new Value(false), new Value(-11));
+        Node node = createNodeAndCompute(nodes, OperatorEnum.BOOL_INT);
+        Assertions.assertTrue(node.lastOut().isEmpty());
+    }
+
+    @Test
+    void compute_alt3_withFalseFirst_expInt() {
+        List<Node> nodes = initInputNode(new Value(false), new Value(-11));
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ALT);
+        Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
     }
 
     @Test
@@ -345,6 +361,49 @@ public class NodeTest {
         Assertions.assertTrue(nodeC.isComputeWithParent());
         Assertions.assertEquals(0, nodeC.parentA().id);
         Assertions.assertEquals(0, nodeC.parentB().id);
+    }
+
+    @Test
+    void compute_Ternary_pid15() {
+        // On cible problemId=15 : a < b ? c : d
+        final int problemId = 15;
+
+        // Jeu de données : couvre les deux branches (true/false) du ternaire
+        List<InOut> map = new ArrayList<>();
+        map.add(new InOut(problemId, Arrays.asList(0, 1, 5, 9))); // a<b → c (=5)
+        map.add(new InOut(problemId, Arrays.asList(2, -1, 7, 8))); // a<b false → d (=8)
+        map.add(new InOut(problemId, Arrays.asList(3, 10, -5, 42))); // a<b → c (=-5)
+        map.add(new InOut(problemId, Arrays.asList(9, 9, 1, 2))); // a<b false (égalité) → d (=2)
+
+        // Inputs A=0, B=1, C=2, D=3
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(new Node(0));
+        nodes.add(new Node(1));
+        nodes.add(new Node(2));
+        nodes.add(new Node(3));
+
+        // Node 4 : MORE_THAN(1,0) // b > a ≡ a < b
+        createCustomNode(nodes, 1, 0, 4, OperatorEnum.MORE_THAN, 10);
+
+        // Node 5 : BOOL_INT(4,2) // if (node4==true) then C else EMPTY
+        createCustomNode(nodes, 4, 2, 5, OperatorEnum.BOOL_INT, 10);
+
+        // Node 6 : ALT(5,3) // Node5 != EMPTY ? Node5 : D
+        Node node6 = createCustomNode(nodes, 5, 3, 6, OperatorEnum.ALT, 10);
+
+        // Compute !
+        for (InOut io : map)
+            nodes.forEach(n -> n.compute(io));
+
+        // Vérifie que le ternaire reconstruit matche exactement la vérité du
+        // problemId=15
+        for (int i = 0; i < map.size(); i++) {
+            assertEquals(map.get(i).out, node6.outs.get(i), "Mismatch on sample #" + i);
+        }
+
+        // On peut aussi scorer pour confirmer le 100%
+        nodes.forEach(n -> n.evaluate(map));
+        assertTrue(node6.getAvgEval() >= 100.0, "Expected perfect match (>=100) for reconstructed ternary");
     }
 
     @Test
