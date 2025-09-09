@@ -9,7 +9,6 @@ import dev.samiyc.npsolver.bean.Node;
 
 public class MainStaticService {
     public static final boolean MSG_INFO = false;
-    public static final int MAX_OP = 9;
     public static final int MAX_ID = 500, NB_INPUT = 4;
     public static final int MAX_CYCLE = 2000, IO_MAP_NB_ENTRY = 100;
     public static final int NOISE_SPIKE_CYCLE = 50;

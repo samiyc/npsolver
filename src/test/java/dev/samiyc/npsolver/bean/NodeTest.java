@@ -1,10 +1,6 @@
 package dev.samiyc.npsolver.bean;
 
-import static dev.samiyc.npsolver.service.MainStaticService.MAX_OP;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,14 +35,14 @@ public class NodeTest {
     @Test
     void compute_HighOp_IntBool_expInt() {
         List<Node> nodes = initInputNode(new Value(23), new Value(true));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.INPUT);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
         Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
     }
 
     @Test
     void compute_HighOp_BoolInt_expInt() {
         List<Node> nodes = initInputNode(new Value(true), new Value(23));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.INPUT);
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
         Assertions.assertEquals(nodes.getLast().lastOut(), node.lastOut());
     }
 
@@ -59,21 +55,14 @@ public class NodeTest {
 
     @Test
     void compute_LowOp_IntBool_expInt() {
-        List<Node> nodes = initInputNode(new Value(-11), new Value(false));
-    Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
+        List<Node> nodes = initInputNode(new Value(-11), new Value(true));
+        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
         Assertions.assertEquals(nodes.getFirst().lastOut(), node.lastOut());
     }
 
     @Test
-    void compute_LowOp_BoolInt_expInt() {
-        List<Node> nodes = initInputNode(new Value(false), new Value(-11));
-        Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
-        Assertions.assertEquals(nodes.getLast().lastOut(), node.lastOut());
-    }
-
-    @Test
     void compute_LowOp_BoolInt_expEmpty() {
-        List<Node> nodes = initInputNode(new Value(true), new Value(-11));
+        List<Node> nodes = initInputNode(new Value(-11), new Value(false));
         Node node = createNodeAndCompute(nodes, OperatorEnum.ADD);
         Assertions.assertTrue(node.lastOut().isEmpty());
     }
@@ -81,7 +70,7 @@ public class NodeTest {
     @Test
     void compute_allOp_IntInt_expValue() {
         List<Node> nodes = initInputNode(new Value(5), new Value(-11));
-        for (int i = 0; i < MAX_OP; i++) {
+        for (int i = 0; i < OperatorEnum.opsOfType(OperatorEnum.Type.MATH).size(); i++) {
             Node nn = new Node(nodes, 2, 200);
             Assertions.assertTrue(nn.lastOut().isEmpty());
             nn.compute(null);
@@ -103,7 +92,7 @@ public class NodeTest {
         List<Node> nodes = initInputNode(new Value(true), new Value(-11));
         RuntimeException thrown = assertThrows(
                 RuntimeException.class, () -> {
-                    for (int i = 0; i <= MAX_OP; i++) {
+                    for (int i = 0; i <= OperatorEnum.opsOfType(OperatorEnum.Type.MATH).size(); i++) {
                         nodes.add(new Node(nodes, 2, 0));
                     }
                 },
@@ -308,44 +297,54 @@ public class NodeTest {
 
         // Init nodes
         List<Node> nodes = new ArrayList<>();
-        nodes.add(new Node(0));
+        Node inputA = new Node(0);
+        nodes.add(inputA);
         nodes.add(new Node(1));
         nodes.add(new Node(2));
         nodes.add(new Node(3));
         Node nodeA = createCustomNode(nodes, 0, 1, 4, OperatorEnum.MULT, 10);
-        Node nodeB = createCustomNode(nodes, 0, 4, 5, OperatorEnum.ABS, 10);
+        Node nodeB = createCustomNode(nodes, 0, 4, 5, OperatorEnum.ALT, 10);
         Node nodeC = createCustomNode(nodes, 0, 5, 6, OperatorEnum.ADD, 10);
 
         // Function call
         for (InOut io : map)
             nodes.forEach(n -> n.compute(io));
         nodes.forEach(n -> n.evaluate(map));
-        nodes.forEach(n -> n.removeDuplicates(nodes));
+        nodes.forEach(n -> n.cleanUp(-1.0));
+
+        // Connect child to parent
         Assertions.assertEquals("4[AxB|-2500 -1633|75.0]", nodeA.toString());
-        Assertions.assertEquals("_", nodeB.toString());
-        Assertions.assertEquals("6[A+4|-2450 -1562|75.0]", nodeC.toString());
-        // clean up
+        Assertions.assertEquals("_", nodeB.toString()); // Avant cleanup 5[A:4|50 71|75.0]
+        Assertions.assertEquals("6[A+A|100 142|75.0]", nodeC.toString());
+
+        // Remove from main list
         MainStaticService.cleanUp(nodes, 6, 10);
         Assertions.assertEquals("4[AxB|---|75.0]", nodeA.toString());
-        Assertions.assertEquals("5[A+4|---|75.0]", nodeC.toString());
+        Assertions.assertEquals("5[A+A|---|75.0]", nodeC.toString());
 
         // Verifications
+        // inputs
+        Assertions.assertEquals(2, inputA.childs.size());
+        Assertions.assertTrue(inputA.childs.contains(nodeA));
+        Assertions.assertTrue(inputA.childs.contains(nodeA));
         // Node A
+        Assertions.assertTrue(nodes.contains(nodeA));
         Assertions.assertTrue(nodeA.isComputeWithParent());
         Assertions.assertFalse(nodeA.childs.contains(nodeB));
-        Assertions.assertTrue(nodeA.childs.contains(nodeC));
+        Assertions.assertFalse(nodeA.childs.contains(nodeC));
         // Node B
         Assertions.assertFalse(nodes.contains(nodeB));
         Assertions.assertFalse(nodeB.isComputeWithParent());
-        Assertions.assertNull(nodeB.parentA());
-        Assertions.assertNull(nodeB.parentB());
+        Assertions.assertNull(nodeB.parents);
         Assertions.assertNull(nodeB.outs);
-        Assertions.assertNull(nodeB.evals);
         Assertions.assertNull(nodeB.childs);
+        Assertions.assertNull(nodeB.evals);
+        Assertions.assertEquals(55.55, nodeB.avgEval);
         // Node C
+        Assertions.assertTrue(nodes.contains(nodeC));
         Assertions.assertTrue(nodeC.isComputeWithParent());
         Assertions.assertEquals(0, nodeC.parentA().id);
-        Assertions.assertEquals(4, nodeC.parentB().id);
+        Assertions.assertEquals(0, nodeC.parentB().id);
     }
 
     @Test

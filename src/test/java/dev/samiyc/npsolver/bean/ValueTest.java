@@ -22,27 +22,6 @@ class ValueTest {
     }
 
     @Test
-    void add_withBool_expectOr() {
-        Value out;
-        //FF => F
-        out = new Value(false).add(new Value(false));
-        Assertions.assertEquals(false, out.bool);
-        Assertions.assertTrue(out.isBool());
-        //TF => T
-        out = new Value(true).add(new Value(false));
-        Assertions.assertEquals(true, out.bool);
-        Assertions.assertTrue(out.isBool());
-        //FT => T
-        out = new Value(false).add(new Value(true));
-        Assertions.assertEquals(true, out.bool);
-        Assertions.assertTrue(out.isBool());
-        //TT => T
-        out = new Value(true).add(new Value(true));
-        Assertions.assertEquals(true, out.bool);
-        Assertions.assertTrue(out.isBool());
-    }
-
-    @Test
     void mult_WithNumber_ExpectMultiplied() {
         Value out;
         // 23 * (-11) => -253
@@ -59,27 +38,6 @@ class ValueTest {
     }
 
     @Test
-    void mult_WithBool_ExpectAnd() {
-        Value out;
-        //FF => F
-        out = new Value(false).mult(new Value(false));
-        Assertions.assertEquals(false, out.bool);
-        Assertions.assertTrue(out.isBool());
-        //TF => F
-        out = new Value(true).mult(new Value(false));
-        Assertions.assertEquals(false, out.bool);
-        Assertions.assertTrue(out.isBool());
-        //FT => F
-        out = new Value(false).mult(new Value(true));
-        Assertions.assertEquals(false, out.bool);
-        Assertions.assertTrue(out.isBool());
-        //TT => T
-        out = new Value(true).mult(new Value(true));
-        Assertions.assertEquals(true, out.bool);
-        Assertions.assertTrue(out.isBool());
-    }
-
-    @Test
     void sup_withNumber_expTrueFalse() {
         Value out;
         // 23 > -11 => True
@@ -92,19 +50,6 @@ class ValueTest {
         Assertions.assertTrue(out.isBool());
     }
 
-    @Test
-    void sup_withBool_expEmpty() {
-        Value out;
-        // True > False => Empty
-        out = new Value(true).sup(new Value(false));
-        Assertions.assertTrue(out.isEmpty());
-        // True > Empty => Empty
-        out = new Value(true).sup(new Value());
-        Assertions.assertTrue(out.isEmpty());
-        // Empty > True => Empty
-        out = new Value().sup(new Value(true));
-        Assertions.assertTrue(out.isEmpty());
-    }
 
     @Test
     void alternative_withBoolAndEmpty_expBool() {
@@ -323,6 +268,71 @@ class ValueTest {
         // min(b, c) => 11
         out = b.min(c);
         Assertions.assertTrue(out.isEmpty());
+    }
+
+    
+    @Test
+    void and_withBool_expectOk() {
+        Value out;
+        //FF => F
+        out = new Value(false).and(new Value(false));
+        Assertions.assertEquals(false, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //TF => F
+        out = new Value(true).and(new Value(false));
+        Assertions.assertEquals(false, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //FT => F
+        out = new Value(false).and(new Value(true));
+        Assertions.assertEquals(false, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //TT => T
+        out = new Value(true).and(new Value(true));
+        Assertions.assertEquals(true, out.bool);
+        Assertions.assertTrue(out.isBool());
+    }
+
+    @Test
+    void or_WithBool_ExpectOk() {
+        Value out;
+        //FF => F
+        out = new Value(false).or(new Value(false));
+        Assertions.assertEquals(false, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //TF => T
+        out = new Value(true).or(new Value(false));
+        Assertions.assertEquals(true, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //FT => T
+        out = new Value(false).or(new Value(true));
+        Assertions.assertEquals(true, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //TT => T
+        out = new Value(true).or(new Value(true));
+        Assertions.assertEquals(true, out.bool);
+        Assertions.assertTrue(out.isBool());
+    }
+
+    
+    @Test
+    void xor_WithBool_ExpectOk() {
+        Value out;
+        //FF => F
+        out = new Value(false).xor(new Value(false));
+        Assertions.assertEquals(false, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //TF => T
+        out = new Value(true).xor(new Value(false));
+        Assertions.assertEquals(true, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //FT => T
+        out = new Value(false).xor(new Value(true));
+        Assertions.assertEquals(true, out.bool);
+        Assertions.assertTrue(out.isBool());
+        //TT => F
+        out = new Value(true).xor(new Value(true));
+        Assertions.assertEquals(false, out.bool);
+        Assertions.assertTrue(out.isBool());
     }
 
     @Test

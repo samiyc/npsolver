@@ -32,8 +32,8 @@ public class InOut {
         int d = in.get(3).number;
         Value rtn = new Value();
 
-        //   /!\Input Code /!\
-        if (problemId == 1) rtn = new Value(a * a * a * a);
+        //TEST OK !!!
+        if (problemId == 1) rtn = new Value(20);
         else if (problemId == 2) rtn = new Value(a > 0);
         else if (problemId == 3) rtn = new Value(a >= 0);
         else if (problemId == 4) rtn = new Value(a + b);
@@ -45,12 +45,14 @@ public class InOut {
         else if (problemId == 10) rtn = new Value((int) Math.sqrt(Math.pow(a - c, 2) + Math.pow(b - d, 2)));
         else if (problemId == 11) rtn = new Value(a * a - d * d);
         else if (problemId == 12) rtn = new Value(a > b != c > d);
-        else if (problemId == 13) rtn = a > b && a > c && c > d ? new Value(a) : new Value(false);
+        else if (problemId == 13) rtn = new Value(a * a * a * a);
+        else if (problemId == 14) rtn = a > b && a > c && c > d ? new Value(a) : new Value(false);
 
-        else if (problemId == 14) rtn = new Value(a < b ? c : d);
-        else if (problemId == 15) rtn = new Value(a < b ? d * d : b + c);
-        else if (problemId == 16) rtn = new Value(a * a - b * b + c - d);
-        else if (problemId == 17) rtn = new Value(a > b && c > d ? a : b + c); //KO !!!
+        //TEST KO !!!
+        else if (problemId == 15) rtn = new Value(a < b ? c : d);
+        else if (problemId == 16) rtn = new Value(a < b ? d * d : b + c);
+        else if (problemId == 17) rtn = new Value(a * a - b * b + c - d);
+        else if (problemId == 18) rtn = new Value(a > b && c > d ? a : b + c);
         return rtn;
     }
 

@@ -30,6 +30,12 @@ public class Value {
         return new Value();
     }
 
+    public Value div(Value other) {
+        if (bothInt(other) && other.number != 0) return new Value(number / other.number);
+        if (bothBool(other)) error(other, "DIV WITH BOOL");
+        return new Value();
+    }
+
     public Value sup(Value other) {
         if (bothInt(other)) return new Value(number > other.number);
         if (bothBool(other)) error(other, "SUP WITH BOOL");

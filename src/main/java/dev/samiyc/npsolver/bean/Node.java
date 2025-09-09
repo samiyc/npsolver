@@ -196,7 +196,10 @@ public class Node {
         Node na = parentA();
         Node nb = parentB();
         if (na.outs == null) {
-            throw new RuntimeException("Empty outs ! this:" + this + " a:" + na + "b:" + nb);
+            throw new RuntimeException("Empty outs ! this:" + this + " a:" + na + " b:" + nb);
+        }
+        if (!op.isUnary() && parentB().outs == null) {
+            throw new RuntimeException("parentB() NULL ! this:" + this + " a:" + na + " b:" + nb);
         }
         Value a = safeLastOut(parentA(), "A");
         Value b = op.isUnary() ? null : safeLastOut(parentB(), "B");
@@ -219,6 +222,7 @@ public class Node {
                 case ADD -> outs.add(a.add(b));
                 case MINUS -> outs.add(a.minus(b));
                 case MULT -> outs.add(a.mult(b));
+                case DIV -> outs.add(a.div(b));
                 case MORE_THAN -> outs.add(a.sup(b));
                 case ALT -> outs.add(a.alternative(b));
                 case HYPOT -> outs.add(a.hypot(b));
@@ -226,7 +230,7 @@ public class Node {
                 default -> throw new RuntimeException("Binary op not supported op:" + op + " a:" + a + " b:" + b);
             }
         } else {
-            if (na.op.isOutputTypeBoolean() && nb.op.isOutputTypeMath()) {
+            if (a.isBool() && b.isInt()) {
                 outs.add(boolIntInteraction(a, b));
             } else {
                 outs.add(boolIntInteraction(b, a));
@@ -342,7 +346,6 @@ public class Node {
         Node matchingParentNode = getEqualParentIfPresent();
         if (matchingParentNode != null) {
             mapChildToGrandParentThenDelete(matchingParentNode);
-            // connectChildToGrandParentAndClean(this);
         } else if (isComputeWithParent() && avgEval < min) {
             prepareForDelete(44.44);
         }
@@ -354,12 +357,20 @@ public class Node {
                 if (!c.parents.contains(this))
                     throw new RuntimeException("Child not connected !");
                 c.parents.set(c.parents.indexOf(this), matchingParentNode);
-                matchingParentNode.addChild(c);
+                if (!matchingParentNode.childs.contains(c))
+                    matchingParentNode.addChild(c);
             }
         });
+        this.parents.forEach(p -> p.childs.remove(this));
         this.parents.clear();
         this.childs.clear();
-        this.avgEval = -55.55;
+        this.outs.clear();
+        this.evals.clear();
+        this.parents = null;
+        this.childs = null;
+        this.outs = null;
+        this.evals = null;
+        this.avgEval = 55.55;
     }
 
     private void prepareForDelete(double og) {
@@ -494,11 +505,11 @@ public class Node {
         return pids;
     }
 
-    private boolean isEqualParent() {
+    public boolean isEqualParent() {
         return getEqualParentIfPresent() != null;
     }
 
-    private Node getEqualParentIfPresent() {
+    public Node getEqualParentIfPresent() {
         if (parentA() != null) {
             if (outsEqual(parentA().outs, this.outs))
                 return parentA();
@@ -544,7 +555,7 @@ public class Node {
         return String.valueOf(a).equals(String.valueOf(b));
     }
 
-    private boolean isConstantOuts() {
+    public boolean isConstantOuts() {
         if (this.outs == null || this.outs.isEmpty())
             return false;
         return allOutsEqual(this.outs);

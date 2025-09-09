@@ -1,5 +1,8 @@
 package dev.samiyc.npsolver.utils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Enum des opérateurs NP Solver
  */
@@ -9,19 +12,20 @@ public enum OperatorEnum {
     ADD('+', Type.MATH, Type.MATH, 2),
     MINUS('-', Type.MATH, Type.MATH, 2),
     MULT('x', Type.MATH, Type.MATH, 2),
+    DIV('/', Type.MATH, Type.MATH, 2),
     HYPOT('h', Type.MATH, Type.MATH, 2),
     MIN('m', Type.MATH, Type.MATH, 2),
 
     SQRT('#', Type.MATH, Type.MATH, 1),
     ABS('a', Type.MATH, Type.MATH, 1),
-    
+
     ALT(':', Type.MATH, Type.MATH, 2),
     MORE_THAN('>', Type.MATH, Type.BOOLEAN, 2),
     BOOL_INT('?', Type.BOTH, Type.MATH, 2),
-    
+
     // INVERTED('§', Type.BOOLEAN, Type.BOOLEAN, 1),
     AND('&', Type.BOOLEAN, Type.BOOLEAN, 2),
-    OR('/', Type.BOOLEAN, Type.BOOLEAN, 2),
+    OR('§', Type.BOOLEAN, Type.BOOLEAN, 2),
     XOR('!', Type.BOOLEAN, Type.BOOLEAN, 2),
 
     INPUT('¤', Type.NA, Type.MATH, 1),
@@ -109,6 +113,14 @@ public enum OperatorEnum {
         if (filtered.isEmpty())
             throw new RuntimeException("NOOP !!!");
         return filtered.get(RNG.nextInt(filtered.size()));
+    }
+
+    public static List<OperatorEnum> opsOfType(Type type) {
+        List<OperatorEnum> ops = new ArrayList<>();
+        for (OperatorEnum op : OperatorEnum.values())
+            if (op.inputType == type)
+                ops.add(op);
+        return ops;
     }
 
 }
