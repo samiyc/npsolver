@@ -98,12 +98,6 @@ public class Value {
         return new Value();
     }
 
-    public Value not() {
-        if (isBool()) return new Value(!bool);
-        if (isInt()) error(this, "NOT with math val");
-        return new Value();
-    }
-
     private void error(Value other, String msg) {
         throw new RuntimeException(msg+" a:" + this +" b:"+ other);
     }

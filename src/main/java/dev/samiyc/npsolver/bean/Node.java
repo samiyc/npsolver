@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.samiyc.npsolver.service.EvaluationStaticService;
 import dev.samiyc.npsolver.utils.OperatorEnum;
+import dev.samiyc.npsolver.utils.OperatorEnum.Type;
 
 public class Node {
 
@@ -166,10 +167,10 @@ public class Node {
         if (na.op == null || nb.op == null)
             throw new RuntimeException("NOOP !!!");
 
-        if (na.op.isOutputTypeBoolean() && nb.op.isOutputTypeBoolean()) {
-            return OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.BOOLEAN);
-        } else if (na.op.isOutputTypeMath() && nb.op.isOutputTypeMath()) {
-            return OperatorEnum.getRandomOpForInputType(OperatorEnum.Type.MATH);
+        if (na.op.isOutputType(Type.MATH) && nb.op.isOutputType(Type.MATH)) {
+            return OperatorEnum.randomOpOfInputType(OperatorEnum.Type.MATH);
+        } else if (na.op.isOutputType(Type.BOOLEAN) && nb.op.isOutputType(Type.BOOLEAN)) {
+            return OperatorEnum.randomOpOfInputType(OperatorEnum.Type.BOOLEAN);
         }
         return OperatorEnum.BOOL_INT;
     }
@@ -207,7 +208,6 @@ public class Node {
         switch (op) {
             case SQRT -> outs.add(a.sqrt());
             case ABS -> outs.add(a.abs());
-            case NOT -> outs.add(a.not());
             case AND -> outs.add(a.and(b));
             case OR -> outs.add(a.or(b));
             case XOR -> outs.add(a.xor(b));

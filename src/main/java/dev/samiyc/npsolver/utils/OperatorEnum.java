@@ -15,19 +15,15 @@ public enum OperatorEnum {
     DIV('/', Type.MATH, Type.MATH, 2),
     HYPOT('h', Type.MATH, Type.MATH, 2),
     MIN('m', Type.MATH, Type.MATH, 2),
-
     SQRT('#', Type.MATH, Type.MATH, 1),
     ABS('a', Type.MATH, Type.MATH, 1),
-
-    ALT(':', Type.BOTH, Type.MATH, 2),
-    MORE_THAN('>', Type.MATH, Type.BOOLEAN, 2),
+    ALT(':', Type.MATH, Type.MATH, 2),
     BOOL_INT('?', Type.BOTH, Type.MATH, 2),
-
-    // INVERTED('§', Type.BOOLEAN, Type.BOOLEAN, 1),
+    
+    MORE_THAN('>', Type.MATH, Type.BOOLEAN, 2),
     AND('&', Type.BOOLEAN, Type.BOOLEAN, 2),
     OR('§', Type.BOOLEAN, Type.BOOLEAN, 2),
     XOR('!', Type.BOOLEAN, Type.BOOLEAN, 2),
-    NOT('£', Type.BOOLEAN, Type.BOOLEAN, 1),
 
     INPUT('¤', Type.NA, Type.MATH, 1),
     NOOP('~', Type.NA, Type.NA, 0);
@@ -67,20 +63,12 @@ public enum OperatorEnum {
         return nbInput == 2;
     }
 
-    public boolean isInputTypeMath() {
-        return inputType == Type.MATH;
+    public boolean isInputType(Type t) {
+        return inputType == t;
     }
 
-    public boolean isInputTypeBoolean() {
-        return inputType == Type.BOOLEAN;
-    }
-
-    public boolean isOutputTypeMath() {
-        return outputType == Type.MATH;
-    }
-
-    public boolean isOutputTypeBoolean() {
-        return outputType == Type.BOOLEAN;
+    public boolean isOutputType(Type t) {
+        return outputType == t;
     }
 
     // --- Lookups ---
@@ -96,27 +84,12 @@ public enum OperatorEnum {
         LIST_OPERATOR = temp.toString();
     }
 
-    /**
-     * Retourne un opérateur choisi aléatoirement parmi ceux du type donné.
-     *
-     * @param type Type.MATH ou Type.BOOLEAN
-     * @return OperatorEnum choisi aléatoirement, ou null si aucun ne correspond
-     */
-    public static OperatorEnum getRandomOpForInputType(Type type) {
-        if (type == null)
-            throw new RuntimeException("NOOP !!!");
-        java.util.List<OperatorEnum> filtered = new java.util.ArrayList<>();
-        for (OperatorEnum op : values()) {
-            if (op.inputType == type) {
-                filtered.add(op);
-            }
-        }
-        if (filtered.isEmpty())
-            throw new RuntimeException("NOOP !!!");
+    public static OperatorEnum randomOpOfInputType(Type type) {
+        List<OperatorEnum> filtered = opsOfInputType(type);
         return filtered.get(RNG.nextInt(filtered.size()));
     }
 
-    public static List<OperatorEnum> opsOfType(Type type) {
+    public static List<OperatorEnum> opsOfInputType(Type type) {
         List<OperatorEnum> ops = new ArrayList<>();
         for (OperatorEnum op : OperatorEnum.values())
             if (op.inputType == type)

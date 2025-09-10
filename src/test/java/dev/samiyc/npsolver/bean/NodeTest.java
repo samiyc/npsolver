@@ -86,7 +86,7 @@ public class NodeTest {
     @Test
     void compute_allOp_IntInt_expValue() {
         List<Node> nodes = initInputNode(new Value(5), new Value(-11));
-        for (int i = 0; i < OperatorEnum.opsOfType(OperatorEnum.Type.MATH).size(); i++) {
+        for (int i = 0; i < OperatorEnum.opsOfInputType(OperatorEnum.Type.MATH).size(); i++) {
             Node nn = new Node(nodes, 2, 200);
             Assertions.assertTrue(nn.lastOut().isEmpty());
             nn.compute(null);
@@ -108,7 +108,7 @@ public class NodeTest {
         List<Node> nodes = initInputNode(new Value(true), new Value(-11));
         RuntimeException thrown = assertThrows(
                 RuntimeException.class, () -> {
-                    for (int i = 0; i <= OperatorEnum.opsOfType(OperatorEnum.Type.MATH).size(); i++) {
+                    for (int i = 0; i <= OperatorEnum.opsOfInputType(OperatorEnum.Type.MATH).size(); i++) {
                         nodes.add(new Node(nodes, 2, 0));
                     }
                 },
