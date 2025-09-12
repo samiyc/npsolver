@@ -12,7 +12,7 @@ public class MainStaticService {
     public static final int MAX_ID = 500, NB_INPUT = 4;
     public static final int MAX_CYCLE = 2000, IO_MAP_NB_ENTRY = 100;
     public static final int NOISE_SPIKE_CYCLE = 50;
-    public static final double NOISE_LIMIT = 1.0, NOISE_SPIKE_HIGH = 90;
+    public static final double NOISE_LIMIT = 1.0, NOISE_SPIKE_HIGH = 50;
     public static final Random random = new Random();
 
     private MainStaticService() {
@@ -41,7 +41,7 @@ public class MainStaticService {
         List<InOut> map = InOut.initMap(ioNbEntry, nbInput, problemId, count);
 
         long initMapCt = System.currentTimeMillis();
-        for (InOut io : map) nodes.forEach(n -> n.compute(io));
+        for (InOut io : map) nodes.forEach(n -> n.compute(io, null));
         messageInfoLog("\n### SIM > OUTS", nodes);
 
         long computeCt = System.currentTimeMillis();

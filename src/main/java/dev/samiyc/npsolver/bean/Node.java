@@ -115,7 +115,7 @@ public class Node {
         int conflict = 0, ida, idb, idRdc;
         boolean dup;
         do {
-            idRdc = id > 20 + conflict ? 20 + conflict : id - 1;
+            idRdc = id > 20 + conflict*2 ? 20 + conflict*2 : id - 1;
             idRdc = id > MAX_ID / 2 ? id / 10 : idRdc;
 
             ida = random.nextInt(idRdc);
@@ -159,6 +159,7 @@ public class Node {
     }
 
     private OperatorEnum selectOperator(List<Node> nodes, int ida, int idb) {
+        List<OperatorEnum> excluded = new ArrayList<>();
         Node na = nodes.get(ida);
         Node nb = nodes.get(idb);
 
@@ -166,11 +167,13 @@ public class Node {
             throw new RuntimeException("GET(i) KO !!");
         if (na.op == null || nb.op == null)
             throw new RuntimeException("NOOP !!!");
-
+        if (na.isInput() || na.parentA().isInput())
+            excluded.add(OperatorEnum.CORRUPTED_GATE);
+        
         if (na.op.isOutputType(Type.MATH) && nb.op.isOutputType(Type.MATH)) {
-            return OperatorEnum.randomOpOfInputType(OperatorEnum.Type.MATH);
+            return OperatorEnum.randomOpOfInputType(OperatorEnum.Type.MATH, excluded);
         } else if (na.op.isOutputType(Type.BOOLEAN) && nb.op.isOutputType(Type.BOOLEAN)) {
-            return OperatorEnum.randomOpOfInputType(OperatorEnum.Type.BOOLEAN);
+            return OperatorEnum.randomOpOfInputType(OperatorEnum.Type.BOOLEAN, null);
         }
         return OperatorEnum.BOOL_INT;
     }
@@ -183,7 +186,7 @@ public class Node {
 
     /* ========================= Compute / Evaluate ========================== */
 
-    public void compute(InOut io) {
+    public void compute(InOut io, Value coruptedValue) {
         if (isInput()) {
             outs.add(io.in.get(id));
             return;
@@ -202,26 +205,65 @@ public class Node {
         if (!op.isUnary() && parentB().outs == null) {
             throw new RuntimeException("parentB() NULL ! this:" + this + " a:" + na + " b:" + nb);
         }
-        Value a = safeLastOut(parentA(), "A");
+        Value a = coruptedValue != null ? coruptedValue : safeLastOut(parentA(), "A");
         Value b = op.isUnary() ? null : safeLastOut(parentB(), "B");
 
         switch (op) {
-            case SQRT -> outs.add(a.sqrt());
             case ABS -> outs.add(a.abs());
-            case AND -> outs.add(a.and(b));
-            case OR -> outs.add(a.or(b));
-            case XOR -> outs.add(a.xor(b));
+            case SQRT -> outs.add(a.sqrt());
+
             case ADD -> outs.add(a.add(b));
             case MINUS -> outs.add(a.minus(b));
             case MULT -> outs.add(a.mult(b));
             case DIV -> outs.add(a.div(b));
-            case MORE_THAN -> outs.add(a.sup(b));
             case HYPOT -> outs.add(a.hypot(b));
             case MIN -> outs.add(a.min(b));
-            case ALT -> outs.add(a.alternative(b));
+            case MODULO -> outs.add(a.modulo(b));
+            
+            case MORE_THAN -> outs.add(a.sup(b));
             case BOOL_INT -> outs.add(a.boolIntInteraction(b));
+            case ALT -> outs.add(a.alternative(b));
+            
+            case AND -> outs.add(a.and(b));
+            case OR -> outs.add(a.or(b));
+            case XOR -> outs.add(a.xor(b));
+
+            case CORRUPTED_GATE -> this.currupt();
+            case BIN_LSHIFT -> outs.add(a.lshift(b));
+            case BIN_RSHIFT -> outs.add(a.rshift(b));
+            case BIN_AND -> outs.add(a.binAnd(b));
+
             default -> throw new RuntimeException("OP not supported op:" + op + " a:" + a + " b:" + b);
         }
+    }
+
+    private void currupt() {
+        if (parentA().lastOut() == null) return; // Too soon
+        if (parentA().isInput()) throw new RuntimeException("I CAN'T CORRUPT THAT !!! (input)");
+
+        List<Node> familyLine = getLifeLine();
+        if (familyLine.isEmpty()) throw new RuntimeException("I CAN'T CORRUPT THAT !!! (emptyLine)");
+        familyLine = new ArrayList<>(familyLine.reversed());
+        familyLine.forEach(n -> n.outs.removeLast());
+        
+        // TRUNK
+        Node trunk = familyLine.removeFirst();
+        trunk.parents.add(this);
+        trunk.compute(null, parentB().lastOut());
+        // RECALCULATE LINE
+        if (!familyLine.isEmpty()) familyLine.forEach(n -> compute(null, null));
+    }
+
+    private List<Node> getLifeLine() {
+        List<Node> out = new ArrayList<>();
+        Node cur = this;
+        for (int i = 0; i < 5; i++) {
+            Node pa = cur.parentA();
+            if (pa.isInput()) return out;
+            cur = pa;
+            out.add(cur);
+        }
+        return out;
     }
 
     private Value safeLastOut(Node p, String label) {

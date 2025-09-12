@@ -27,7 +27,7 @@ public class NodeTest {
 
         for (int i = 0; i < 4; i++) {
             n.id = i;
-            n.compute(io);
+            n.compute(io, null);
             Assertions.assertEquals(io.in.get(i), n.lastOut());
         }
     }
@@ -89,7 +89,7 @@ public class NodeTest {
         for (int i = 0; i < OperatorEnum.opsOfInputType(OperatorEnum.Type.MATH).size(); i++) {
             Node nn = new Node(nodes, 2, 200);
             Assertions.assertTrue(nn.lastOut().isEmpty());
-            nn.compute(null);
+            nn.compute(null, null);
             Assertions.assertFalse(nn.lastOut().isEmpty());
             nodes.add(nn);
         }
@@ -99,7 +99,7 @@ public class NodeTest {
         Node node = new Node(nodes, 2, 0);
         node.parents = nodes;
         node.op = op;
-        node.compute(null);
+        node.compute(null, null);
         return node;
     }
 
@@ -138,7 +138,7 @@ public class NodeTest {
 
         // Compute & Evaluate
         for (InOut io : map)
-            nodes.forEach(n -> n.compute(io));
+            nodes.forEach(n -> n.compute(io, null));
         nodes.forEach(n -> n.evaluate(map));
 
         // Asserts
@@ -171,7 +171,7 @@ public class NodeTest {
 
         // Compute & Evaluate
         for (InOut io : map)
-            nodes.forEach(n -> n.compute(io));
+            nodes.forEach(n -> n.compute(io, null));
         nodes.forEach(n -> n.evaluate(map));
 
         // Asserts
@@ -324,7 +324,7 @@ public class NodeTest {
 
         // Function call
         for (InOut io : map)
-            nodes.forEach(n -> n.compute(io));
+            nodes.forEach(n -> n.compute(io, null));
         nodes.forEach(n -> n.evaluate(map));
         nodes.forEach(n -> n.cleanUp(-1.0));
 
@@ -393,7 +393,7 @@ public class NodeTest {
 
         // Compute !
         for (InOut io : map)
-            nodes.forEach(n -> n.compute(io));
+            nodes.forEach(n -> n.compute(io, null));
 
         // Vérifie que le ternaire reconstruit matche exactement la vérité du
         // problemId=15

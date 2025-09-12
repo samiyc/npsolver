@@ -63,6 +63,19 @@ public class Value {
         if (bothInt(other)) return new Value(Math.min(number, other.number));
         return new Value();
     }
+    public Value modulo(Value other) {
+        if (other.number == 0) return new Value();
+        return new Value(number % other.number);
+    }
+    public Value lshift(Value other) {
+        return new Value(number << other.number);
+    }
+    public Value rshift(Value other) {
+        return new Value(number >> other.number);
+    }
+    public Value binAnd(Value other) {
+        return new Value(number & other.number);
+    }
 
     public Value alternative(Value other) {
         if (bothBool(other)) error(other, "ALT WITH BOOL");

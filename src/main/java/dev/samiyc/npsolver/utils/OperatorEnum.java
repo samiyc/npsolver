@@ -8,25 +8,37 @@ import java.util.List;
  */
 public enum OperatorEnum {
 
-    // === Déclaration des constantes (obligatoirement en tête) ===
+    //UNARY
+    ABS('a', Type.MATH, Type.MATH, 1),
+    SQRT('#', Type.MATH, Type.MATH, 1),
+
+    //MATH
     ADD('+', Type.MATH, Type.MATH, 2),
     MINUS('-', Type.MATH, Type.MATH, 2),
     MULT('x', Type.MATH, Type.MATH, 2),
     DIV('/', Type.MATH, Type.MATH, 2),
     HYPOT('h', Type.MATH, Type.MATH, 2),
     MIN('m', Type.MATH, Type.MATH, 2),
-    SQRT('#', Type.MATH, Type.MATH, 1),
-    ABS('a', Type.MATH, Type.MATH, 1),
-    ALT(':', Type.MATH, Type.MATH, 2),
-    BOOL_INT('?', Type.BOTH, Type.MATH, 2),
-    
+    MODULO('%', Type.MATH, Type.MATH, 2),
+
+    //TERNARY
     MORE_THAN('>', Type.MATH, Type.BOOLEAN, 2),
+    BOOL_INT('?', Type.BOTH, Type.MATH, 2),
+    ALT(':', Type.MATH, Type.MATH, 2),
+
+    //BOOLEAN
     AND('&', Type.BOOLEAN, Type.BOOLEAN, 2),
     OR('§', Type.BOOLEAN, Type.BOOLEAN, 2),
     XOR('!', Type.BOOLEAN, Type.BOOLEAN, 2),
 
-    INPUT('¤', Type.NA, Type.MATH, 1),
-    NOOP('~', Type.NA, Type.NA, 0);
+    //SPECIAL
+    CORRUPTED_GATE('¤', Type.NA, Type.NA, 2), //NOT YET!
+    BIN_LSHIFT('⭺', Type.MATH, Type.MATH, 2),
+    BIN_RSHIFT('⭼', Type.MATH, Type.MATH, 2),
+    BIN_AND('⇼', Type.MATH, Type.MATH, 2),
+
+    INPUT('z', Type.NA, Type.MATH, 1),
+    NOOP('z', Type.NA, Type.NA, 0);
 
     private static final java.util.Random RNG = new java.util.Random();
 
@@ -84,8 +96,9 @@ public enum OperatorEnum {
         LIST_OPERATOR = temp.toString();
     }
 
-    public static OperatorEnum randomOpOfInputType(Type type) {
+    public static OperatorEnum randomOpOfInputType(Type type, List<OperatorEnum> excluded) {
         List<OperatorEnum> filtered = opsOfInputType(type);
+        if (excluded != null) filtered.removeAll(excluded);
         return filtered.get(RNG.nextInt(filtered.size()));
     }
 
