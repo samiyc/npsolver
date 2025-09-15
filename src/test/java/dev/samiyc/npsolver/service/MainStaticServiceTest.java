@@ -199,7 +199,6 @@ class MainStaticServiceTest {
     }
 
     @Test
-    @Tag("flaky") // Unstable test
     void run_withProblemId_15() {
         run_withProblemId(15);
     }
@@ -208,6 +207,18 @@ class MainStaticServiceTest {
     @Tag("flaky") // Unstable test
     void run_withProblemId_16() {
         run_withProblemId(16);
+    }
+
+    @Test
+    @Tag("flaky") // Unstable test
+    void run_withProblemId_17() {
+        run_withProblemId(17);
+    }
+
+    @Test
+    @Tag("flaky") // Unstable test
+    void run_withProblemId_18() {
+        run_withProblemId(18);
     }
 
     private static void run_withProblemId(int problemId) {
