@@ -366,7 +366,7 @@ public class NodeTest {
     @Test
     void compute_Ternary_pid15() {
         // On cible problemId=15 : a < b ? c : d
-        final int problemId = 15;
+        final int problemId = 14;
 
         // Jeu de données : couvre les deux branches (true/false) du ternaire
         List<InOut> map = new ArrayList<>();

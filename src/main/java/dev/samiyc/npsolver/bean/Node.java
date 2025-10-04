@@ -29,6 +29,7 @@ public class Node {
 
     public List<Value> outs;
     public List<Short> evals;
+    public boolean isConstant = false;
 
     /**
      * INPUT node
@@ -187,6 +188,7 @@ public class Node {
     /* ========================= Compute / Evaluate ========================== */
 
     public void compute(InOut io, Value coruptedValue) {
+        if (isConstant) return;
         if (isInput()) {
             outs.add(io.in.get(id));
             return;
@@ -285,6 +287,7 @@ public class Node {
             lexp = exp;
         }
         avgEval = calcAverage(evals);
+        this.isConstant = isConstantOuts();
     }
 
     public static double calcAverage(List<Short> numbers) {
@@ -415,6 +418,8 @@ public class Node {
     }
 
     public void reset() {
+        if (isConstant) return;
+
         // Reset outs pour la prochaine simulation
         if (outs == null)
             outs = new ArrayList<>();
